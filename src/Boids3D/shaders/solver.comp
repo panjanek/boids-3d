@@ -1,0 +1,308 @@
+﻿#version 430
+
+#pragma optimize(on)
+
+layout(local_size_x = {LocalSizeX}) in;
+
+struct ShaderConfig {
+    int particleCount;
+    float dt;
+    float separationRadius;
+    float t;
+    float randomization;
+    float fieldSize;
+    float cellSize;
+    float maxDist;
+    int speciesCount;
+    float alignRadius;
+    int trackedIdx;
+    float wallForce;
+    float cohesionRadius;
+    int cellCount;
+    int totalCellCount;
+    float separationForce;
+    float alignForce;
+    float cohesionForce;
+    float maxSpeed;
+    float separationRadius2;
+    float alignRadius2;
+    float cohesionRadius2;
+    float fov;
+    float fovDeg;
+};
+
+struct Particle
+{
+   vec4 position;
+   vec4 velocity;
+   int species;
+   int flags;
+   int  cellIndex;
+   float xzAngle;
+   float yAngle;
+   int _pad0;
+   int _pad1;
+   int _pad2;
+   vec4 direction;
+};
+
+layout(std140, binding = 0) uniform ConfigBuffer {
+    ShaderConfig config;
+};
+
+layout(std430, binding = 1) readonly buffer InputBuffer
+{
+    Particle inParticles[];
+};
+
+layout(std430, binding = 2) writeonly buffer OutputBuffer
+{
+    Particle outParticles[];
+};
+
+layout(std430, binding = 5) writeonly buffer TrackingBuffer
+{
+    Particle tracked;
+};
+
+layout(std430, binding = 6) buffer CellCount {
+    uint cellCounts[];
+};
+
+layout(std430, binding = 7) buffer CellOffsets {
+    uint cellOffsets[];
+};
+
+layout(std430, binding = 8) buffer ParticleIndices {
+    uint particleIndices[];
+};
+
+uint hash(uint state)
+{
+    state ^= 2747636419u;
+    state *= 2654435769u;
+    state ^= state >> 16;
+    state *= 2654435769u;
+    state ^= state >> 16;
+    state *= 2654435769u;
+    return state;
+}
+
+float scaleToRange01(uint state)
+{
+    return state / 4294967295.0;
+}
+
+float get_random_float_01(Particle p, uint seed)
+{
+     uint random = hash(uint(p.position.y * config.fieldSize + p.position.x) + hash(gl_GlobalInvocationID.x + int(config.t) * seed));
+     float random01 = scaleToRange01(random);
+     return random01;
+}
+
+vec4 get_random_01_vec4(Particle p)
+{
+    float x = get_random_float_01(p, 100037);
+    float y = get_random_float_01(p, 2045);
+    float z = get_random_float_01(p, 31347);
+    return vec4(x,y,z,0);
+}
+
+void torus_pos(inout vec4 pos)
+{
+    if (pos.x >= config.fieldSize)
+        pos.x -= config.fieldSize;
+    else if (pos.x < 0)
+        pos.x += config.fieldSize;
+
+    if (pos.y >= config.fieldSize)
+        pos.y -= config.fieldSize;
+    else if (pos.y < 0)
+        pos.y += config.fieldSize;
+
+    if (pos.z >= config.fieldSize)
+        pos.z -= config.fieldSize;
+    else if (pos.z < 0)
+        pos.z += config.fieldSize;
+}
+
+float one_wall_force(float d, float m)
+{
+    float f = 0.0;
+
+    if (d < m)
+    {
+        // distance from wall (0..m)
+        float t = (m - d) / m;
+        f = t;
+    }
+    else if (d > config.fieldSize - m)
+    {
+        float t = (d - (config.fieldSize - m)) / m;
+        f = -t;
+    }
+
+    return f;
+}
+
+vec4 compute_wall_force(vec4 pos)
+{
+    float margin = config.fieldSize * 0.1;
+    
+    vec4 wall = vec4(0);
+    wall.x = one_wall_force(pos.x, margin);
+    wall.y = one_wall_force(pos.y, margin);
+    wall.z = one_wall_force(pos.z, margin);
+     
+    return wall * config.wallForce;
+}
+
+vec4 compute_total_interactions(uint idx, Particle p)
+{
+    vec4 separation = vec4(0);
+    vec4 avgVelocity = vec4(0);
+    vec4 avgDirection = vec4(0);
+    vec4 alignment = vec4(0);
+    int alignCount = 0;
+    vec4 center = vec4(0);
+    int centerCount = 0;
+    vec4 cohesion = vec4(0);
+    
+    int cellCount2 = config.cellCount * config.cellCount;
+    int gridX = p.cellIndex % config.cellCount;
+    int gridY = (p.cellIndex / config.cellCount) % config.cellCount;
+    int gridZ = p.cellIndex / (cellCount2);
+    ivec3 main = ivec3(gridX, gridY, gridZ);
+
+    for (int dz = -1; dz <= 1; dz++)
+    for (int dy = -1; dy <= 1; dy++)
+    for (int dx = -1; dx <= 1; dx++)
+    {
+        ivec3 cell = main + ivec3(dx, dy, dz);
+        if (cell.x < 0 || cell.x >= config.cellCount || 
+            cell.y < 0 || cell.y >= config.cellCount ||
+            cell.z < 0 || cell.z >= config.cellCount)
+            continue;
+        
+        uint cellIdx = cell.x +
+                       cell.y * config.cellCount +
+                       cell.z * cellCount2;
+        uint offset = cellOffsets[cellIdx];
+        uint count = cellCounts[cellIdx];
+        
+        for(uint indiceIdx = offset; indiceIdx<offset + count; indiceIdx++)
+        {
+            uint otherIdx = particleIndices[indiceIdx];
+            if (idx != otherIdx)
+            {
+                 Particle other = inParticles[otherIdx];
+                 
+                 vec4 diff = other.position - p.position;
+                 vec4 normalizedDiff = normalize(diff);
+
+                 if (dot(p.direction, -normalizedDiff) < config.fov) 
+                     continue;
+                 
+                 float r2 = dot(diff, diff);
+                 if (r2 < config.separationRadius2 && r2 > 0.0001)
+                 {
+                     separation -= diff / r2;
+                 }
+                    
+                 if (r2 < config.alignRadius2)
+                 {
+                     avgVelocity += other.velocity;
+                     avgDirection += other.direction;
+                     alignCount++;
+                 }
+                 
+                 if (r2 < config.cohesionRadius2)
+                 {
+                     center += other.position;
+                     centerCount++;
+                 }
+            }
+        }
+    }
+    
+    if (alignCount > 0)
+    {
+        avgDirection /= alignCount;
+        float l = length(avgDirection);
+        if (l > 0.001)        
+            alignment = normalize(avgDirection) - p.direction;
+    }
+    
+    if (centerCount > 0)
+    {
+        center /= centerCount;
+        vec3 d = (center - p.position).xyz;
+        float l = length(d);
+        if (l > 0.001)
+            cohesion = vec4(d / l, 0);
+    }
+    
+    vec4 acc =
+          config.separationForce * separation +
+          config.alignForce * alignment +
+          config.cohesionForce * cohesion + 
+          compute_wall_force(p.position); 
+
+    return acc;
+}
+
+void update_one(uint idx)
+{
+    Particle p = inParticles[idx];    
+    vec4 vel = p.velocity;
+    vec4 pos = p.position;
+    vec4 dir = p.direction;
+
+    //compute all forces
+    vec4 acc = compute_total_interactions(idx, p);
+
+    //integrate velocity
+    vel += acc * config.dt;    
+    
+    //clamp speed
+    float speed = length(vel);
+    if (speed > 0.001)
+    {
+        vel = normalize(vel) * clamp(speed, 0.1, config.maxSpeed);
+    }
+    else
+    {
+        vel = get_random_01_vec4(p) - 0.5;
+    }
+    
+    //integrate position
+    pos += vel * config.dt;
+
+
+    //prepare updated particle struct
+    torus_pos(pos);
+    
+    float vlen = length(vel);
+    if (vlen > 0.001)
+        p.direction = vel / vlen;    
+    //p.direction = normalize(vel);
+    p.position = pos;
+    p.velocity = vel;
+    p.flags = 0;
+    if (config.trackedIdx > -1 && config.trackedIdx == idx)
+    {
+        p.flags = 1;
+        tracked = p;
+    }
+
+    outParticles[idx] = p;
+}
+
+void main()
+{
+    uint idx = gl_GlobalInvocationID.x;
+    if (idx >=0 && idx < config.particleCount) 
+    {
+        update_one(idx);
+    }
+}
