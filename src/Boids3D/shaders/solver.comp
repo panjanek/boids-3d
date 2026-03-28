@@ -46,6 +46,15 @@ struct Particle
    vec4 direction;
 };
 
+struct Edge
+{
+    uint a;
+    uint b;
+    float restLength;
+    int color;
+    int flags;
+};
+
 layout(std140, binding = 0) uniform ConfigBuffer {
     ShaderConfig config;
 };
@@ -58,6 +67,11 @@ layout(std430, binding = 1) readonly buffer InputBuffer
 layout(std430, binding = 2) writeonly buffer OutputBuffer
 {
     Particle outParticles[];
+};
+
+layout(std430, binding = 3) writeonly buffer EdgesBuffer
+{
+    Edge edges[];
 };
 
 layout(std430, binding = 5) writeonly buffer TrackingBuffer
@@ -75,6 +89,23 @@ layout(std430, binding = 7) buffer CellOffsets {
 
 layout(std430, binding = 8) buffer ParticleIndices {
     uint particleIndices[];
+};
+
+
+layout(std430, binding = 10) buffer Neighbors {
+    uint neighbours[];
+};
+
+layout(std430, binding = 11) buffer NeighborsStart {
+    uint neighboursStart[];
+};
+
+layout(std430, binding = 12) buffer NeighborsCount {
+    uint neighboursCount[];
+};
+
+layout(std430, binding = 13) buffer RestLengths {
+    float restLengths[];
 };
 
 uint hash(uint state)
