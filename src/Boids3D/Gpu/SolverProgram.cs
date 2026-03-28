@@ -30,27 +30,50 @@ namespace Boids3D.Gpu
 
         private int trackingBuffer;
 
-        public int cellCountBuffer;
+        private int cellCountBuffer;
 
-        public int cellOffsetBuffer;
+        private int cellOffsetBuffer;
         
-        public int cellOffsetBuffer2;
+        private int cellOffsetBuffer2;
 
-        public int particleIndicesBuffer;
+        private int particleIndicesBuffer;
+        
+        public int neighboursBuffer;
+
+        public int neighboursStartBuffer;
+
+        public int neighboursCountBuffer;
+
+        public int restLengthsBuffer;
 
         private int currentParticlesCount;
+        
+        private int currentEdgesCount;
 
         private int currentTotalCellsCount;
 
         private int shaderPointStrideSize;
 
-        public int[] cellCounts;
+        private int[] cellCounts;
 
-        public int[] cellOffsets;
+        private int[] cellOffsets;
+        
+        public uint[] neighbours;
+
+        public uint[] neighboursStart;
+
+        public uint[] neighboursCount;
+
+        public float[] restLengths;
 
         private Particle trackedParticle;
         
-        public int edgesBuffer;
+        private int edgesBuffer;
+        
+        
+        public int PointsBuffer => pointsBufferB;
+        
+        public int EdgesBuffer => edgesBuffer;
 
         public SolverProgram()
         {
@@ -70,9 +93,9 @@ namespace Boids3D.Gpu
             tilingBinProgram = ShaderUtil.CompileAndLinkComputeShader("tiling_bin.comp");
         }
 
-        public void Run(ref ShaderConfig config)
+        public void Run(ref ShaderConfig config, int edgesCount)
         {
-            PrepareBuffers(config.particleCount, config.totalCellCount);
+            PrepareBuffers(config.particleCount, config.totalCellCount, edgesCount);
             int dispatchGroupsX = (currentParticlesCount + ShaderUtil.LocalSizeX - 1) / ShaderUtil.LocalSizeX;
             if (dispatchGroupsX > maxGroupsX)
                 dispatchGroupsX = maxGroupsX;           
@@ -84,7 +107,7 @@ namespace Boids3D.Gpu
             config.alignRadius2 =  config.alignRadius * config.alignRadius;
             config.cohesionRadius2 = config.cohesionRadius * config.cohesionRadius;
             config.fov = (float)Math.Cos((Math.PI * config.fovDeg / 180));
-            PrepareBuffers(config.particleCount, config.totalCellCount);
+            PrepareBuffers(config.particleCount, config.totalCellCount, edgesCount);
 
             //upload config
             GL.BindBuffer(BufferTarget.UniformBuffer, uboConfig);
@@ -142,14 +165,29 @@ namespace Boids3D.Gpu
 
         public void UploadParticles(Particle[] particles)
         {
-            PrepareBuffers(particles.Length, currentTotalCellsCount);
+            PrepareBuffers(particles.Length, currentTotalCellsCount, currentEdgesCount);
             GL.BindBuffer(BufferTarget.ShaderStorageBuffer, pointsBufferA);
             GL.BufferSubData(BufferTarget.ShaderStorageBuffer, 0, particles.Length * shaderPointStrideSize, particles);
             GL.BindBuffer(BufferTarget.ShaderStorageBuffer, pointsBufferB);
             GL.BufferSubData(BufferTarget.ShaderStorageBuffer, 0, particles.Length * shaderPointStrideSize, particles);
         }
-
-        public int PointsBuffer => pointsBufferB;
+        
+        public void UploadEdges(Edge[] edges)
+        {
+            PrepareBuffers(currentParticlesCount, currentTotalCellsCount, edges.Length);
+            GL.BindBuffer(BufferTarget.ShaderStorageBuffer, edgesBuffer);
+            GL.BufferSubData(BufferTarget.ShaderStorageBuffer, 0, edges.Length * Marshal.SizeOf<Edge>(), edges);
+            
+            ComputeNeighbours(currentParticlesCount, edges);
+            GL.BindBuffer(BufferTarget.ShaderStorageBuffer, neighboursBuffer);
+            GL.BufferSubData(BufferTarget.ShaderStorageBuffer, 0, neighbours.Length * Marshal.SizeOf<uint>(), neighbours);
+            GL.BindBuffer(BufferTarget.ShaderStorageBuffer, neighboursStartBuffer);
+            GL.BufferSubData(BufferTarget.ShaderStorageBuffer, 0, neighboursStart.Length * Marshal.SizeOf<uint>(), neighboursStart);
+            GL.BindBuffer(BufferTarget.ShaderStorageBuffer, neighboursCountBuffer);
+            GL.BufferSubData(BufferTarget.ShaderStorageBuffer, 0, neighboursCount.Length * Marshal.SizeOf<uint>(), neighboursCount);
+            GL.BindBuffer(BufferTarget.ShaderStorageBuffer, restLengthsBuffer);
+            GL.BufferSubData(BufferTarget.ShaderStorageBuffer, 0, restLengths.Length * Marshal.SizeOf<float>(), restLengths);
+        }
 
         public void DownloadParticles(Particle[] particles, bool bufferB = false)
         {
@@ -200,7 +238,7 @@ namespace Boids3D.Gpu
             GL.BufferSubData(BufferTarget.ShaderStorageBuffer, 0, size * Marshal.SizeOf<int>(), buffer);
         }
 
-        private void PrepareBuffers(int particlesCount, int totalCellsCount)
+        private void PrepareBuffers(int particlesCount, int totalCellsCount, int edgesCount)
         {
             if (currentParticlesCount != particlesCount)
             {
@@ -208,6 +246,8 @@ namespace Boids3D.Gpu
                 CreateBuffer(ref pointsBufferA, currentParticlesCount, shaderPointStrideSize);
                 CreateBuffer(ref pointsBufferB, currentParticlesCount, shaderPointStrideSize);
                 CreateBuffer(ref particleIndicesBuffer, currentParticlesCount, Marshal.SizeOf<int>());
+                neighboursStart = new uint[particlesCount];
+                neighboursCount = new uint[particlesCount];
             }
 
             if (currentTotalCellsCount != totalCellsCount)
@@ -218,6 +258,16 @@ namespace Boids3D.Gpu
                 CreateBuffer(ref cellOffsetBuffer2, currentTotalCellsCount, Marshal.SizeOf<int>());
                 cellCounts = new int[totalCellsCount];
                 cellOffsets = new int[totalCellsCount];
+            }
+
+            if (currentEdgesCount != edgesCount)
+            {
+                currentEdgesCount = edgesCount;
+                CreateBuffer(ref edgesBuffer, (int)edgesCount, Marshal.SizeOf<Edge>());
+                CreateBuffer(ref neighboursBuffer, (int)edgesCount * 2, Marshal.SizeOf<uint>());
+                CreateBuffer(ref restLengthsBuffer, (int)edgesCount * 2, Marshal.SizeOf<float>());
+                neighbours = new uint[edgesCount * 2];
+                restLengths = new float[edgesCount * 2];
             }
         }
 
@@ -231,6 +281,40 @@ namespace Boids3D.Gpu
             GL.GenBuffers(1, out bufferId);
             GL.BindBuffer(BufferTarget.ShaderStorageBuffer, bufferId);
             GL.BufferData(BufferTarget.ShaderStorageBuffer, elementCount * elementSize, IntPtr.Zero, BufferUsageHint.DynamicDraw);
+        }
+        
+        public void ComputeNeighbours(int particlesCount, Edge[] edges)
+        {
+            Array.Clear(neighboursCount);
+            for(int e=0; e<edges.Length; e++)
+            {
+                var edge = edges[e];
+                neighboursCount[edge.a]++;
+                neighboursCount[edge.b]++;
+            }
+
+            uint sum = 0;
+            for (int i = 0; i < particlesCount; i++)
+            {
+                neighboursStart[i] = sum;
+                sum += neighboursCount[i];
+            }
+
+            var cursor = neighboursStart.ToArray();
+            for (int i = 0; i < edges.Length; i++)
+            {
+                uint a = edges[i].a;
+                uint b = edges[i].b;
+                float restLen = edges[i].restLength;
+
+                neighbours[cursor[a]] = b;
+                restLengths[cursor[a]] = restLen;
+                cursor[a]++;
+
+                neighbours[cursor[b]] = a;
+                restLengths[cursor[b]] = restLen;
+                cursor[b]++;
+            }
         }
     }
 }

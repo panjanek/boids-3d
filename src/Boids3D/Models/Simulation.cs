@@ -83,6 +83,13 @@ namespace Boids3D.Models
                 */
 
             }
+            
+            edges = new Edge[count/5];
+            for (int e = 0; e < edges.Length; e++)
+            {
+                edges[e].a = (uint)rnd.Next(particles.Length);
+                edges[e].b = (uint)rnd.Next(particles.Length);
+            }
         }
     }
 }

@@ -27,7 +27,6 @@ namespace Boids3D.Gpu
             if (status != (int)All.True)
             {
                 var log = GL.GetShaderInfoLog(computeShader);
-                DebugUtil.Log(log);
                 throw new Exception(log);
             }
 
@@ -37,7 +36,6 @@ namespace Boids3D.Gpu
             GL.GetProgram(program, GetProgramParameterName.LinkStatus, out status);
             if (status != (int)All.True)
             {
-                DebugUtil.Log(GL.GetProgramInfoLog(program));
                 throw new Exception(GL.GetProgramInfoLog(program));
             }
 

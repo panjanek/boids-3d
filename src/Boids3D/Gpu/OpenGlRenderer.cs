@@ -274,13 +274,17 @@ namespace Boids3D.Gpu
             yAngle = 0;
         }
 
-        public void UploadParticleData() => solverProgram.UploadParticles(app.simulation.particles);
+        public void UploadParticleData()
+        {
+            solverProgram.UploadParticles(app.simulation.particles);
+            solverProgram.UploadEdges(app.simulation.edges);
+        }
      
         public void StartTracking(int idx)
         {
             TrackedIdx = idx;
             app.simulation.config.trackedIdx = TrackedIdx ?? -1;
-            solverProgram.Run(ref app.simulation.config);
+            solverProgram.Run(ref app.simulation.config, app.simulation.edges.Length);
         }
 
         public void StopTracking()
@@ -289,7 +293,7 @@ namespace Boids3D.Gpu
             {
                 TrackedIdx = null;
                 app.simulation.config.trackedIdx = TrackedIdx ?? -1;
-                solverProgram.Run(ref app.simulation.config);
+                solverProgram.Run(ref app.simulation.config, app.simulation.edges.Length);
             }
         }
 
@@ -310,7 +314,7 @@ namespace Boids3D.Gpu
             FollowTrackedParticle();
             displayProgram.Run(
                 solverProgram.PointsBuffer,
-                0,
+                solverProgram.EdgesBuffer,
                 GetProjectionMatrix(),
                 new Vector2(glControl.Width, glControl.Height),
                 GetViewMatrix(), app.simulation);
@@ -329,7 +333,7 @@ namespace Boids3D.Gpu
             {
                 app.simulation.config.trackedIdx = TrackedIdx ?? -1;
                 app.simulation.config.t += app.simulation.config.dt;
-                solverProgram.Run(ref app.simulation.config);
+                solverProgram.Run(ref app.simulation.config, app.simulation.edges.Length);
             }
 
             var recDir = app.configWindow.recordDir?.ToString();
