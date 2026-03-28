@@ -66,30 +66,14 @@ namespace Boids3D.Models
                 dir.Normalize();
                 particles[i].direction = dir;
                 particles[i].velocity = dir * (10f + rnd.NextSingle() * 20);
-
-                
-                /*
-                var center = new Vector4(config.fieldSize / 2, config.fieldSize / 2, config.fieldSize / 2, 0);
-                var radius = config.fieldSize / 2;
-                while ((particles[i].position - center).Length > radius)
-                    particles[i].position = new Vector4(config.fieldSize * rnd.NextSingle(), config.fieldSize * rnd.NextSingle(), config.fieldSize * rnd.NextSingle(), 0);
-
-
-                var inward = center - particles[i].position;
-                inward.Normalize();
-                particles[i].direction = inward;
-                
-                particles[i].velocity = dir * (1f + rnd.NextSingle() * 2);
-                */
-
             }
             
-            edges = new Edge[count/5];
+            edges = new Edge[count/2];
             for (int e = 0; e < edges.Length; e++)
             {
                 edges[e].a = (uint)rnd.Next(particles.Length);
                 edges[e].b = (uint)rnd.Next(particles.Length);
-                edges[e].restLength = 10;
+                edges[e].restLength = 3;
             }
         }
     }

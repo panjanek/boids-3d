@@ -166,11 +166,13 @@ float one_wall_force(float d, float m)
         // distance from wall (0..m)
         float t = (m - d) / m;
         f = t;
+        f = 1;
     }
     else if (d > config.fieldSize - m)
     {
         float t = (d - (config.fieldSize - m)) / m;
         f = -t;
+        f = -1;
     }
 
     return f;
@@ -188,7 +190,8 @@ vec4 compute_wall_force(vec4 pos)
     return wall * config.wallForce;
 }
 
-vec4 compute_total_interactions(uint idx, Particle p)
+
+vec4 compute_total_interactions(uint idx, Particle p, float rep_strength)
 {
     int cellCount2 = config.cellCount * config.cellCount;
     int gridX = p.cellIndex % config.cellCount;
@@ -196,6 +199,7 @@ vec4 compute_total_interactions(uint idx, Particle p)
     int gridZ = p.cellIndex / (cellCount2);
     ivec3 main = ivec3(gridX, gridY, gridZ);
 
+    vec4 rep_force = vec4(0,0,0,0);
     for (int dz = -1; dz <= 1; dz++)
     for (int dy = -1; dy <= 1; dy++)
     for (int dx = -1; dx <= 1; dx++)
@@ -218,16 +222,44 @@ vec4 compute_total_interactions(uint idx, Particle p)
             if (idx != otherIdx)
             {
                  Particle other = inParticles[otherIdx];
-                 vec4 diff = other.position - p.position;
-                 float r2 = dot(diff, diff);
-
+                 
+                 vec4 d = p.position - other.position;
+                 float epsilon = 0.1;
+                 float r2 = dot(d, d) + epsilon;
+                 float r = length(d);
+                 if (r2 > epsilon)
+                     rep_force += d * (rep_strength / (r2 * sqrt(r2)));
             }
         }
     }
     
-    vec4 acc = compute_wall_force(p.position); 
+    vec4 wall_force = compute_wall_force(p.position);
+    if (length(rep_force) > length(wall_force))
+        return wall_force;
+    else
+        return wall_force + rep_force;
+}
 
-    return acc;
+vec4 flatten_force(uint idx, vec4 pos, float strength)
+{
+    uint start = neighboursStart[idx];
+    uint count = neighboursCount[idx];
+
+    if (count < 2)
+        return vec4(0.0);
+
+    vec4 avg = vec4(0.0);
+
+    for (uint i = 0; i < count; i++)
+    {
+        uint n = neighbours[start + i];
+        avg += inParticles[n].position;
+    }
+
+    avg /= float(count);
+
+    // Laplacian force
+    return strength * (avg - pos);
 }
 
 void update_one(uint idx)
@@ -238,7 +270,7 @@ void update_one(uint idx)
     vec4 dir = p.direction;
 
     //compute all forces
-    vec4 acc = compute_total_interactions(idx, p);
+    vec4 acc = compute_total_interactions(idx, p, 1000);
     //acc = vec4(0,0,0,0);
     
     // spring force
@@ -253,21 +285,25 @@ void update_one(uint idx)
 
         vec4 d = inParticles[otherIdx].position - pos;
         float dist = length(d) + 1e-6;
+        
         float delta = dist - restLengthMult * restLengths[neighIdx];
         acc += (d / dist) * (uSpringK * delta);
+        
+        float diff = (dist - restLengths[neighIdx]) / dist;
+        pos += 0.5 * d * diff;
     }    
     
-    
-    
+    float uFlatteningK = 1.0;
+    acc += flatten_force(idx, pos, uFlatteningK);
 
     //integrate velocity
     vel += acc * config.dt;    
     
     //clamp speed
-    float uMaxStep = 3;
+    float uMaxStep = 10;
     float stepLen = length(vel);
     if (stepLen > uMaxStep)
-        vel *= uMaxStep / stepLen;   
+        vel *= uMaxStep / stepLen;
     
     //integrate position
     pos += vel * config.dt;
@@ -276,10 +312,6 @@ void update_one(uint idx)
     //prepare updated particle struct
     torus_pos(pos);
     
-    float vlen = length(vel);
-    if (vlen > 0.001)
-        p.direction = vel / vlen;    
-    //p.direction = normalize(vel);
     p.position = pos;
     p.velocity = vel;
     p.flags = 0;
