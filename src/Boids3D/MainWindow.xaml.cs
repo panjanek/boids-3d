@@ -76,6 +76,19 @@ namespace Boids3D
                 case Key.F:
                     ToggleFullscreen();
                     break;
+                case Key.V:
+                    if (double.IsNaN(app.mainWindow.placeholder.Width))
+                    {
+                        app.mainWindow.placeholder.Width = 1080;
+                        app.mainWindow.placeholder.Height = 1920;
+                    }
+                    else
+                    {
+                        app.mainWindow.placeholder.Width = double.NaN;
+                        app.mainWindow.placeholder.Height = double.NaN;
+                    }
+                    e.Handled = true;
+                    break;
             }
         }
 

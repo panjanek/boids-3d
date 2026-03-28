@@ -143,8 +143,10 @@ void main()
     vColor.g = amplify(vColor.g, amp);
     vColor.b = amplify(vColor.b, amp);
 
-    
-    vFadingAlpha = exp(-fogDensity * distance);
+    if (fogDensity == 0)
+        vFadingAlpha = 1;
+    else
+        vFadingAlpha = exp(-fogDensity * distance);
     
     //float viewTerm = clamp(dot(normalize(-viewPos.xyz), normal),0,1);
     //lighting *= 0.7 + 0.3 * viewTerm; //optional

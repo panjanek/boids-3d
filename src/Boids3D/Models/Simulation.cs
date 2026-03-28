@@ -20,7 +20,7 @@ namespace Boids3D.Models
 
         public float particleSize = 0.7f;
 
-        public float fogDensity = 0.0005f;
+        public float fogDensity = 0.0f;
 
         public float forwardMove = 0.0f;
 
