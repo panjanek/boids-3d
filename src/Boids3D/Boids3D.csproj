@@ -16,14 +16,10 @@
 
   
   <ItemGroup>
-    <EmbeddedResource Include="shaders\cube.frag" />
-    <EmbeddedResource Include="shaders\cube.vert" />
     <EmbeddedResource Include="shaders\edges.frag" />
     <EmbeddedResource Include="shaders\edges.vert" />
     <EmbeddedResource Include="shaders\nodes.frag" />
     <EmbeddedResource Include="shaders\nodes.vert" />
-    <EmbeddedResource Include="shaders\horizon.frag" />
-    <EmbeddedResource Include="shaders\horizon.vert" />
     <EmbeddedResource Include="shaders\tiling_bin.comp" />
     <EmbeddedResource Include="shaders\tiling_count.comp" />
     <EmbeddedResource Include="shaders\solver.comp" />

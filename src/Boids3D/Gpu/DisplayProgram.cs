@@ -129,7 +129,6 @@ namespace Boids3D.Gpu
 
         public void Run(int nodesBuffer,
                         int edgesBuffer,
-                        int nodeFlagsBuffer,
                         Matrix4 projectionMatrix,
                         Vector2 viewportSize,
                         Matrix4 view,
@@ -143,7 +142,6 @@ namespace Boids3D.Gpu
             //nodes as points
             GL.UseProgram(nodesProgram);
             GL.BindBufferBase(BufferRangeTarget.ShaderStorageBuffer, 2, nodesBuffer);
-            GL.BindBufferBase(BufferRangeTarget.ShaderStorageBuffer, 14, nodeFlagsBuffer);
             GL.BindVertexArray(quadVao);
             GL.UniformMatrix4(projNodesLocation, false, ref projectionMatrix);
             GL.Uniform1(particleSizeLocation, sim.particleSize);

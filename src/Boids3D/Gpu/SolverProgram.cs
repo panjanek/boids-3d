@@ -49,6 +49,8 @@ namespace Boids3D.Gpu
         public int[] cellOffsets;
 
         private Particle trackedParticle;
+        
+        public int edgesBuffer;
 
         public SolverProgram()
         {

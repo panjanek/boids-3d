@@ -19,10 +19,6 @@ layout(std430, binding = 2) buffer NodesBuffer {
     Node points[];
 };
 
-layout(std430, binding = 14) buffer FlagsBuffer {
-    int nodeFlags[];
-};
-
 uniform mat4 view;
 uniform mat4 projection;
 uniform float paricleSize;

@@ -311,7 +311,6 @@ namespace Boids3D.Gpu
             displayProgram.Run(
                 solverProgram.PointsBuffer,
                 0,
-                0,
                 GetProjectionMatrix(),
                 new Vector2(glControl.Width, glControl.Height),
                 GetViewMatrix(), app.simulation);
