@@ -24,8 +24,12 @@ namespace Boids3D.Models
 
         public float forwardMove = 0.0f;
 
+        public float lineWidth = 300f;
+
         [JsonIgnore]
         public Particle[] particles;
+        
+        public Edge[] edges = new Edge[0];
 
         public int seed = 11;
 

@@ -309,15 +309,12 @@ namespace Boids3D.Gpu
         {
             FollowTrackedParticle();
             displayProgram.Run(
+                solverProgram.PointsBuffer,
+                0,
+                0,
                 GetProjectionMatrix(),
-                GetViewMatrix(),
-                app.simulation.config.particleCount,
-                app.simulation.particleSize,
-                app.simulation.fogDensity,
-                app.simulation.config.fieldSize,
-                app.configWindow.CubeVisible,
-                center.Xyz,
-                app.configWindow.HorizonVisible);
+                new Vector2(glControl.Width, glControl.Height),
+                GetViewMatrix(), app.simulation);
             glControl.SwapBuffers();
             frameCounter++;
             Capture();

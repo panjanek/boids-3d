@@ -33,6 +33,7 @@ namespace Boids3D.Gpu
         public int cellCountBuffer;
 
         public int cellOffsetBuffer;
+        
         public int cellOffsetBuffer2;
 
         public int particleIndicesBuffer;
@@ -145,6 +146,8 @@ namespace Boids3D.Gpu
             GL.BindBuffer(BufferTarget.ShaderStorageBuffer, pointsBufferB);
             GL.BufferSubData(BufferTarget.ShaderStorageBuffer, 0, particles.Length * shaderPointStrideSize, particles);
         }
+
+        public int PointsBuffer => pointsBufferB;
 
         public void DownloadParticles(Particle[] particles, bool bufferB = false)
         {

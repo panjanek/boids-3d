@@ -159,15 +159,6 @@ vec4 compute_wall_force(vec4 pos)
 
 vec4 compute_total_interactions(uint idx, Particle p)
 {
-    vec4 separation = vec4(0);
-    vec4 avgVelocity = vec4(0);
-    vec4 avgDirection = vec4(0);
-    vec4 alignment = vec4(0);
-    int alignCount = 0;
-    vec4 center = vec4(0);
-    int centerCount = 0;
-    vec4 cohesion = vec4(0);
-    
     int cellCount2 = config.cellCount * config.cellCount;
     int gridX = p.cellIndex % config.cellCount;
     int gridY = (p.cellIndex / config.cellCount) % config.cellCount;
@@ -196,57 +187,14 @@ vec4 compute_total_interactions(uint idx, Particle p)
             if (idx != otherIdx)
             {
                  Particle other = inParticles[otherIdx];
-                 
                  vec4 diff = other.position - p.position;
-                 vec4 normalizedDiff = normalize(diff);
-
-                 if (dot(p.direction, -normalizedDiff) < config.fov) 
-                     continue;
-                 
                  float r2 = dot(diff, diff);
-                 if (r2 < config.separationRadius2 && r2 > 0.0001)
-                 {
-                     separation -= diff / r2;
-                 }
-                    
-                 if (r2 < config.alignRadius2)
-                 {
-                     avgVelocity += other.velocity;
-                     avgDirection += other.direction;
-                     alignCount++;
-                 }
-                 
-                 if (r2 < config.cohesionRadius2)
-                 {
-                     center += other.position;
-                     centerCount++;
-                 }
+
             }
         }
     }
     
-    if (alignCount > 0)
-    {
-        avgDirection /= alignCount;
-        float l = length(avgDirection);
-        if (l > 0.001)        
-            alignment = normalize(avgDirection) - p.direction;
-    }
-    
-    if (centerCount > 0)
-    {
-        center /= centerCount;
-        vec3 d = (center - p.position).xyz;
-        float l = length(d);
-        if (l > 0.001)
-            cohesion = vec4(d / l, 0);
-    }
-    
-    vec4 acc =
-          config.separationForce * separation +
-          config.alignForce * alignment +
-          config.cohesionForce * cohesion + 
-          compute_wall_force(p.position); 
+    vec4 acc = compute_wall_force(p.position); 
 
     return acc;
 }
