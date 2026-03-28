@@ -158,7 +158,7 @@ namespace Boids3D.Gpu
             );
 
             // edges as quads (x6)
-            /*
+            
             GL.UseProgram(edgesProgram);
             GL.Enable(EnableCap.Blend);
             GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
@@ -180,7 +180,7 @@ namespace Boids3D.Gpu
             GL.Uniform1(lineWidthLocation, sim.lineWidth);
             GL.Uniform1(fogDensityEdgeLocation, sim.fogDensity);
             GL.DrawArrays(PrimitiveType.Triangles, 0, sim.edges.Length * 6);
-            */
+
 
         }
     }

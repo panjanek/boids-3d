@@ -4,15 +4,15 @@ struct Node
 {
    vec4 position;
    vec4 velocity;
-   vec4 prevForce;
-   int color;
+   int species;
    int flags;
    int  cellIndex;
-   int level;
-   int leaf;
-   int win;
-   int parent;
+   float xzAngle;
+   float yAngle;
+   int _pad0;
+   int _pad1;
    int _pad2;
+   vec4 direction;
 };
 
 struct Edge
