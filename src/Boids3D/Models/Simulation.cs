@@ -18,7 +18,7 @@ namespace Boids3D.Models
 
         public ShaderConfig config;
 
-        public float particleSize = 0.7f;
+        public float particleSize = 0.3f;
 
         public float fogDensity = 0.0f;
 

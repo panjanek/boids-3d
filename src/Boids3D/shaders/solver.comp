@@ -234,7 +234,7 @@ vec4 compute_total_interactions(uint idx, Particle p, float rep_strength)
     }
     
     vec4 wall_force = compute_wall_force(p.position);
-    if (length(rep_force) > length(wall_force))
+    if (length(wall_force)>0.1)
         return wall_force;
     else
         return wall_force + rep_force;
@@ -270,7 +270,7 @@ void update_one(uint idx)
     vec4 dir = p.direction;
 
     //compute all forces
-    vec4 acc = compute_total_interactions(idx, p, 1000);
+    vec4 acc = compute_total_interactions(idx, p, 10);
     //acc = vec4(0,0,0,0);
     
     // spring force
