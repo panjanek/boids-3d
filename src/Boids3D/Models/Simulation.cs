@@ -89,6 +89,7 @@ namespace Boids3D.Models
             {
                 edges[e].a = (uint)rnd.Next(particles.Length);
                 edges[e].b = (uint)rnd.Next(particles.Length);
+                edges[e].restLength = 10;
             }
         }
     }

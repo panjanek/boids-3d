@@ -251,6 +251,8 @@ namespace Boids3D.Gpu
                 CreateBuffer(ref pointsBufferA, currentParticlesCount, shaderPointStrideSize);
                 CreateBuffer(ref pointsBufferB, currentParticlesCount, shaderPointStrideSize);
                 CreateBuffer(ref particleIndicesBuffer, currentParticlesCount, Marshal.SizeOf<int>());
+                CreateBuffer(ref neighboursStartBuffer, currentParticlesCount, Marshal.SizeOf<int>());
+                CreateBuffer(ref neighboursCountBuffer, currentParticlesCount, Marshal.SizeOf<int>());
                 neighboursStart = new uint[particlesCount];
                 neighboursCount = new uint[particlesCount];
             }

@@ -239,20 +239,35 @@ void update_one(uint idx)
 
     //compute all forces
     vec4 acc = compute_total_interactions(idx, p);
+    //acc = vec4(0,0,0,0);
+    
+    // spring force
+    float restLengthMult = 1.0;
+    float uSpringK = 40.0;
+    uint neighStart = neighboursStart[idx];
+    uint neighCount = neighboursCount[idx];
+    for (uint i = 0; i < neighCount; i++)
+    {
+        uint neighIdx = neighStart + i;
+        uint otherIdx = neighbours[neighIdx];
+
+        vec4 d = inParticles[otherIdx].position - pos;
+        float dist = length(d) + 1e-6;
+        float delta = dist - restLengthMult * restLengths[neighIdx];
+        acc += (d / dist) * (uSpringK * delta);
+    }    
+    
+    
+    
 
     //integrate velocity
     vel += acc * config.dt;    
     
     //clamp speed
-    float speed = length(vel);
-    if (speed > 0.001)
-    {
-        vel = normalize(vel) * clamp(speed, 0.1, config.maxSpeed);
-    }
-    else
-    {
-        vel = get_random_01_vec4(p) - 0.5;
-    }
+    float uMaxStep = 3;
+    float stepLen = length(vel);
+    if (stepLen > uMaxStep)
+        vel *= uMaxStep / stepLen;   
     
     //integrate position
     pos += vel * config.dt;
