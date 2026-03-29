@@ -180,7 +180,7 @@ float one_wall_force(float d, float m)
 
 vec4 compute_wall_force(vec4 pos)
 {
-    float margin = config.fieldSize * 0.1;
+    float margin = config.fieldSize * 0.2;
     
     vec4 wall = vec4(0);
     wall.x = one_wall_force(pos.x, margin);
@@ -289,7 +289,9 @@ void update_one(uint idx)
         float delta = dist - restLengthMult * restLengths[neighIdx];
         acc += (d / dist) * (uSpringK * delta);
         
-        float diff = (dist - restLengths[neighIdx]) / dist;
+        float targetLestLength = restLengths[neighIdx];
+        float currentLestLength = dist * 0.9 + 0.1 * targetLestLength;
+        float diff = (dist - currentLestLength) / dist;
         pos += 0.5 * d * diff;
     }    
     

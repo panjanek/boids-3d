@@ -32,10 +32,12 @@ public class PolimerizationChemistry : ChemistryBase, IChemistry
     private List<Edge> CheckOne(Simulation sim, int idx, int[] cellOffsets, int[] cellCounts, int[] particleIndices, uint[] neighboursStart, uint[] neighboursCount, uint[] neighbours)
     {
         var newEdges = new List<Edge>();
-        uint neighCount = neighboursCount[idx];
-        if (neighCount >= 2 || done[idx])
+        if (neighboursCount[idx] >= 2 || done[idx])
+        {
+            done[idx] = true;
             return newEdges;
-        
+        }
+
         var p = sim.particles[idx];
         
         int cellCount2 = sim.config.cellCount * sim.config.cellCount;
@@ -62,17 +64,18 @@ public class PolimerizationChemistry : ChemistryBase, IChemistry
             for (int indiceIdx = offset; indiceIdx < offset + count; indiceIdx++)
             {
                 int otherIdx = particleIndices[indiceIdx];
-                if (idx != otherIdx && !done[otherIdx])
+                if (idx != otherIdx && !done[otherIdx] && neighboursCount[otherIdx] < 2)
                 {
                     var other = sim.particles[otherIdx];
                     
                     
                     var distance = (p.position - other.position).Length;
-                    if (distance < 5)
+                    if (distance < 10)
                     {
                         newEdges.Add(new Edge() { a = (uint)idx, b = (uint)otherIdx, restLength = 3 });
                         done[idx] = true;
                         done[otherIdx] = true;
+                        return newEdges;
                     }
                     
                     
