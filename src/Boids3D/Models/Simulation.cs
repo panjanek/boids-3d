@@ -21,7 +21,7 @@ namespace Boids3D.Models
 
         public float particleSize = 0.3f;
 
-        public float fogDensity = 0.0f;
+        public float fogDensity = 0.0002f;
 
         public float forwardMove = 0.0f;
 
@@ -61,32 +61,8 @@ namespace Boids3D.Models
             if (particles == null || particles.Length != count)
                 particles = new Particle[count];
             edges = new Edge[0];
-            
+
             chemistry.Initialize(this);
-
-            /*
-            var rnd = new Random(1);
-            for(int i=0; i< count; i++)
-            {
-                particles[i].position = new Vector4(config.fieldSize * rnd.NextSingle(), config.fieldSize * rnd.NextSingle(), config.fieldSize * rnd.NextSingle(), 0);
-                particles[i].species = rnd.Next(config.speciesCount);
-
-                var dir = new Vector4(rnd.NextSingle() * 2 - 1, rnd.NextSingle() * 2 - 1, rnd.NextSingle() * 2 - 1, 0);
-                dir.Normalize();
-                particles[i].direction = dir;
-                particles[i].velocity = dir * (10f + rnd.NextSingle() * 20);
-            }
-            
-            
-            edges = new Edge[count/2];
-            for (int e = 0; e < edges.Length; e++)
-            {
-                edges[e].a = (uint)rnd.Next(particles.Length);
-                edges[e].b = (uint)rnd.Next(particles.Length);
-                edges[e].restLength = 3;
-            }*/
-            
-            
         }
     }
 }
