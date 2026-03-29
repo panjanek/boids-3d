@@ -17,7 +17,7 @@ namespace Boids3D.Models
         public int flags;
         public int cellIndex;
         public float size;
-        public float yAngle;
+        public int color;
         public int _pad0;
         public int _pad1;
         public int _pad2;

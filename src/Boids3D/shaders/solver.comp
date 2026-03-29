@@ -39,7 +39,7 @@ struct Particle
    int flags;
    int  cellIndex;
    float size;
-   float yAngle;
+   int color;
    int _pad0;
    int _pad1;
    int _pad2;

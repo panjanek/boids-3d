@@ -8,7 +8,7 @@ struct Node
    int flags;
    int  cellIndex;
    float size;
-   float yAngle;
+   int color;
    int _pad0;
    int _pad1;
    int _pad2;
@@ -52,7 +52,7 @@ void main()
         vec3(1.0, 1.0, 1.0), // white
         vec3(0.5, 0.5, 0.5)  // gray
     );
-    int colorIdx = p.type;
+    int colorIdx = p.color;
     vColor = colorIdx >= 0 ? colors[colorIdx % 8] : vec3(1.0, 0.0, 0.0);
     vFadingAlpha = 1.0;
 

@@ -20,7 +20,7 @@ public abstract class ChemistryBase
     protected uint[] neighbours;
     
     protected bool[] done;
-    protected void InternalInitialize(double[] proportion, float[] sizes)
+    protected void InternalInitialize(double[] proportion, float[] sizes, int[] colors)
     {
         done = new bool[sim.particles.Length];
         
@@ -45,6 +45,7 @@ public abstract class ChemistryBase
 
 
             sim.particles[i].size = sizes[sim.particles[i].type];
+            sim.particles[i].color = colors[sim.particles[i].type];
 
             var dir = new Vector4(sim.rnd.NextSingle() * 2 - 1, sim.rnd.NextSingle() * 2 - 1, sim.rnd.NextSingle() * 2 - 1, 0);
             dir.Normalize();
