@@ -35,10 +35,10 @@ struct Particle
 {
    vec4 position;
    vec4 velocity;
-   int species;
+   int type;
    int flags;
    int  cellIndex;
-   float xzAngle;
+   float size;
    float yAngle;
    int _pad0;
    int _pad1;

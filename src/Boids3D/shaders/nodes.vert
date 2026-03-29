@@ -4,10 +4,10 @@ struct Node
 {
    vec4 position;
    vec4 velocity;
-   int species;
+   int type;
    int flags;
    int  cellIndex;
-   float xzAngle;
+   float size;
    float yAngle;
    int _pad0;
    int _pad1;
@@ -39,7 +39,7 @@ void main()
     float sphereRadius = 2 * paricleSize + (viewportSize.x/1920);
     uint id = gl_InstanceID;
     Node p = points[id];
-    vSphereRadiusMult = 1.0;
+    vSphereRadiusMult = p.size;
 
     //coloring
     const vec3 colors[] = vec3[](
@@ -52,7 +52,7 @@ void main()
         vec3(1.0, 1.0, 1.0), // white
         vec3(0.5, 0.5, 0.5)  // gray
     );
-    int colorIdx = p.species;
+    int colorIdx = p.type;
     vColor = colorIdx >= 0 ? colors[colorIdx % 8] : vec3(1.0, 0.0, 0.0);
     vFadingAlpha = 1.0;
 

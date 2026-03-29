@@ -9,7 +9,7 @@ public class PolimerizationChemistry : ChemistryBase, IChemistry
     public void Initialize(Simulation sim)
     {
         this.sim = sim;
-        InternalInitialize([3,2,1],[1,2,3]);
+        InternalInitialize([1],[1]);
     }
 
     protected override void InternalReact()
