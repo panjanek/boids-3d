@@ -284,7 +284,7 @@ namespace Boids3D.Gpu
         {
             TrackedIdx = idx;
             app.simulation.config.trackedIdx = TrackedIdx ?? -1;
-            solverProgram.Run(ref app.simulation.config, app.simulation.edges.Length);
+            solverProgram.Run(app.simulation);
         }
 
         public void StopTracking()
@@ -293,7 +293,7 @@ namespace Boids3D.Gpu
             {
                 TrackedIdx = null;
                 app.simulation.config.trackedIdx = TrackedIdx ?? -1;
-                solverProgram.Run(ref app.simulation.config, app.simulation.edges.Length);
+                solverProgram.Run(app.simulation);
             }
         }
 
@@ -333,7 +333,7 @@ namespace Boids3D.Gpu
             {
                 app.simulation.config.trackedIdx = TrackedIdx ?? -1;
                 app.simulation.config.t += app.simulation.config.dt;
-                solverProgram.Run(ref app.simulation.config, app.simulation.edges.Length);
+                solverProgram.Run(app.simulation);
             }
 
             var recDir = app.configWindow.recordDir?.ToString();

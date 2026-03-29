@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -58,17 +59,21 @@ namespace Boids3D.Gpu
 
         private int[] cellOffsets;
         
-        public uint[] neighbours;
+        private int[] particleIndices;
+        
+        private uint[] neighbours;
 
-        public uint[] neighboursStart;
+        private uint[] neighboursStart;
 
-        public uint[] neighboursCount;
+        private uint[] neighboursCount;
 
-        public float[] restLengths;
+        private float[] restLengths;
 
         private Particle trackedParticle;
         
         private int edgesBuffer;
+
+        private int stepCount = 0;
         
         
         public int PointsBuffer => pointsBufferB;
@@ -93,25 +98,21 @@ namespace Boids3D.Gpu
             tilingBinProgram = ShaderUtil.CompileAndLinkComputeShader("tiling_bin.comp");
         }
 
-        public void Run(ref ShaderConfig config, int edgesCount)
+        public void Run(Simulation sim)
         {
-            PrepareBuffers(config.particleCount, config.totalCellCount, edgesCount);
+            PrepareBuffers(sim.config.particleCount, sim.config.totalCellCount, sim.edges.Length);
             int dispatchGroupsX = (currentParticlesCount + ShaderUtil.LocalSizeX - 1) / ShaderUtil.LocalSizeX;
             if (dispatchGroupsX > maxGroupsX)
                 dispatchGroupsX = maxGroupsX;           
 
-            config.cellCount = (int)Math.Floor(config.fieldSize / config.maxDist);
-            config.cellSize = config.fieldSize / config.cellCount;
-            config.totalCellCount = config.cellCount * config.cellCount * config.cellCount;
-            config.separationRadius2 = config.separationRadius * config.separationRadius;
-            config.alignRadius2 =  config.alignRadius * config.alignRadius;
-            config.cohesionRadius2 = config.cohesionRadius * config.cohesionRadius;
-            config.fov = (float)Math.Cos((Math.PI * config.fovDeg / 180));
-            PrepareBuffers(config.particleCount, config.totalCellCount, edgesCount);
+            sim.config.cellCount = (int)Math.Floor(sim.config.fieldSize / sim.config.maxDist);
+            sim.config.cellSize = sim.config.fieldSize / sim.config.cellCount;
+            sim.config.totalCellCount = sim.config.cellCount * sim.config.cellCount * sim.config.cellCount;
+            PrepareBuffers(sim.config.particleCount, sim.config.totalCellCount, sim.edges.Length);
 
             //upload config
             GL.BindBuffer(BufferTarget.UniformBuffer, uboConfig);
-            GL.BufferData(BufferTarget.UniformBuffer, Marshal.SizeOf<ShaderConfig>(), ref config, BufferUsageHint.StaticDraw);
+            GL.BufferData(BufferTarget.UniformBuffer, Marshal.SizeOf<ShaderConfig>(), ref sim.config, BufferUsageHint.StaticDraw);
 
             // ------------------------ run tiling ---------------------------
             //count
@@ -145,6 +146,11 @@ namespace Boids3D.Gpu
             GL.DispatchCompute(dispatchGroupsX, 1, 1);
             GL.MemoryBarrier(MemoryBarrierFlags.ShaderStorageBarrierBit | MemoryBarrierFlags.ShaderImageAccessBarrierBit);
             
+            // ------------------------- reactions --------------------------
+            stepCount++;
+            if (stepCount % 100 == 0)
+                Reaction(sim);
+            
             // ------------------------ run solver --------------------------
 
             //bind ubo and buffers
@@ -166,6 +172,15 @@ namespace Boids3D.Gpu
             GL.MemoryBarrier(MemoryBarrierFlags.ShaderStorageBarrierBit | MemoryBarrierFlags.ShaderImageAccessBarrierBit);
 
             (pointsBufferA, pointsBufferB) = (pointsBufferB, pointsBufferA);
+            
+        }
+
+        private void Reaction(Simulation sim)
+        {
+            DownloadIntBuffer(particleIndices, particleIndicesBuffer, currentParticlesCount);
+            DownloadParticles(sim.particles);
+            sim.chemistry.React(sim, cellOffsets, cellCounts, particleIndices, neighboursStart, neighboursCount, neighbours);
+            UploadEdges(sim.edges);
         }
 
         public void UploadParticles(Particle[] particles)
@@ -255,6 +270,7 @@ namespace Boids3D.Gpu
                 CreateBuffer(ref neighboursCountBuffer, currentParticlesCount, Marshal.SizeOf<int>());
                 neighboursStart = new uint[particlesCount];
                 neighboursCount = new uint[particlesCount];
+                particleIndices = new int[particlesCount];
             }
 
             if (currentTotalCellsCount != totalCellsCount)

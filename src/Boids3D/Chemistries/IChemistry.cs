@@ -6,5 +6,5 @@ public interface IChemistry
 {
     void Initialize(Simulation sim);
 
-    void React();
+    void React(Simulation sim, int[] cellOffsets, int[] cellCounts, int[] particleIndices, uint[] neighboursStart, uint[] neighboursCount, uint[] neighbours);
 }

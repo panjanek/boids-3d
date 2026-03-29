@@ -60,6 +60,7 @@ namespace Boids3D.Models
         {
             if (particles == null || particles.Length != count)
                 particles = new Particle[count];
+            edges = new Edge[0];
             
             chemistry.Initialize(this);
 
@@ -84,7 +85,7 @@ namespace Boids3D.Models
                 edges[e].b = (uint)rnd.Next(particles.Length);
                 edges[e].restLength = 3;
             }*/
-            edges = new Edge[0];
+            
             
         }
     }

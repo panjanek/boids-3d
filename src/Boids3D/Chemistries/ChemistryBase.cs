@@ -5,7 +5,7 @@ namespace Boids3D.Chemistries;
 
 public abstract class ChemistryBase
 {
-    public void Initialize(Simulation sim)
+    public virtual void Initialize(Simulation sim)
     {
         for(int i=0; i< sim.config.particleCount; i++)
         {
@@ -17,5 +17,13 @@ public abstract class ChemistryBase
             sim.particles[i].direction = dir;
             sim.particles[i].velocity = dir * (10f + sim.rnd.NextSingle() * 20);
         }
+        /*
+        sim.edges = new Edge[sim.config.particleCount/2];
+        for (int e = 0; e < sim.edges.Length; e++)
+        {
+            sim.edges[e].a = (uint)sim.rnd.Next(sim.particles.Length);
+            sim.edges[e].b = (uint)sim.rnd.Next(sim.particles.Length);
+            sim.edges[e].restLength = 3;
+        }*/
     }
 }
