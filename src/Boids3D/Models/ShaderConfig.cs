@@ -19,7 +19,7 @@ namespace Boids3D.Models
 
         [FieldOffset(4)] public float dt = 0.025f;
 
-        [FieldOffset(8)] public float wallMargin = 50f;  
+        [FieldOffset(8)] public float wallMargin = 100f;  
 
         [FieldOffset(12)] public float t = 0;
 
@@ -39,15 +39,15 @@ namespace Boids3D.Models
 
         [FieldOffset(44)] public float wallForce = 35;
 
-        [FieldOffset(48)] public float cohesionRadius = 30f;     
+        [FieldOffset(48)] public float restLengthMult = 1f;     
 
         [FieldOffset(52)] public int cellCount = 0;
 
         [FieldOffset(56)] public int totalCellCount = 0;
 
-        [FieldOffset(60)] public float separationForce = 1.5f;   
+        [FieldOffset(60)] public float springForce = 40f;   
 
-        [FieldOffset(64)] public float alignForce = 1.0f;           
+        [FieldOffset(64)] public float flattenForce = 1.0f;           
 
         [FieldOffset(68)] public float cohesionForce = 0.8f;   
 

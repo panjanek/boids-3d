@@ -26,6 +26,8 @@ namespace Boids3D.Models
         public float forwardMove = 0.0f;
 
         public float lineWidth = 300f;
+        
+        public float reactionDistance = 1f;
 
         [JsonIgnore]
         public Particle[] particles;
