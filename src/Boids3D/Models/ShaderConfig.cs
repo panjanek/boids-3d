@@ -17,7 +17,7 @@ namespace Boids3D.Models
 
         [FieldOffset(0)] public int particleCount = 0;
 
-        [FieldOffset(4)] public float dt = 0.025f;
+        [FieldOffset(4)] public float dt = 0.015f;
 
         [FieldOffset(8)] public float wallMargin = 150f;  
 

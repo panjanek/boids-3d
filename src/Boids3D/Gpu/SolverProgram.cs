@@ -179,7 +179,7 @@ namespace Boids3D.Gpu
         {
             DownloadIntBuffer(particleIndices, particleIndicesBuffer, currentParticlesCount);
             DownloadParticles(sim.particles);
-            sim.chemistry.React(sim, cellOffsets, cellCounts, particleIndices, neighboursStart, neighboursCount, neighbours);
+            sim.chemistry.React(cellOffsets, cellCounts, particleIndices, neighboursStart, neighboursCount, neighbours);
             UploadEdges(sim.edges);
         }
 
