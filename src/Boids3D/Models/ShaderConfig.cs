@@ -19,7 +19,7 @@ namespace Boids3D.Models
 
         [FieldOffset(4)] public float dt = 0.025f;
 
-        [FieldOffset(8)] public float wallMargin = 100f;  
+        [FieldOffset(8)] public float wallMargin = 150f;  
 
         [FieldOffset(12)] public float t = 0;
 
@@ -37,7 +37,7 @@ namespace Boids3D.Models
 
         [FieldOffset(40)] public int trackedIdx;
 
-        [FieldOffset(44)] public float wallForce = 35;
+        [FieldOffset(44)] public float wallForce = 15;
 
         [FieldOffset(48)] public float restLengthMult = 1f;     
 

@@ -166,13 +166,13 @@ float one_wall_force(float d, float m)
         // distance from wall (0..m)
         float t = (m - d) / m;
         f = t;
-        f = 1;
+        //f = 1;
     }
     else if (d > config.fieldSize - m)
     {
         float t = (d - (config.fieldSize - m)) / m;
         f = -t;
-        f = -1;
+        //f = -1;
     }
 
     return f;
