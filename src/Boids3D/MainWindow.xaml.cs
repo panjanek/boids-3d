@@ -9,6 +9,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 using System.Windows.Threading;
+using Boids3D.Chemistries;
 using Boids3D.Gpu;
 using Boids3D.Gui;
 using Boids3D.Models;
@@ -46,6 +47,7 @@ namespace Boids3D
             app = new Models_AppContext();
             app.mainWindow = this;
             app.simulation = new Simulation();
+            app.simulation.chemistry = new PolimerizationChemistry();
             app.simulation.StartSimulation(5000, 1, 300);
             app.renderer = new OpenGlRenderer(placeholder, app);
             app.configWindow = new ConfigWindow(app);

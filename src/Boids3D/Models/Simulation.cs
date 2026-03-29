@@ -7,6 +7,7 @@ using System.Text;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Sources;
+using Boids3D.Chemistries;
 using OpenTK.Audio.OpenAL;
 using OpenTK.Mathematics;
 
@@ -33,7 +34,11 @@ namespace Boids3D.Models
 
         public int seed = 11;
 
-        public float followDistance = 75; 
+        public float followDistance = 75;
+
+        public IChemistry chemistry;
+        
+        public Random rnd = new Random(123);
         
 
         public Simulation()
@@ -55,7 +60,10 @@ namespace Boids3D.Models
         {
             if (particles == null || particles.Length != count)
                 particles = new Particle[count];
+            
+            chemistry.Initialize(this);
 
+            /*
             var rnd = new Random(1);
             for(int i=0; i< count; i++)
             {
@@ -68,13 +76,16 @@ namespace Boids3D.Models
                 particles[i].velocity = dir * (10f + rnd.NextSingle() * 20);
             }
             
+            
             edges = new Edge[count/2];
             for (int e = 0; e < edges.Length; e++)
             {
                 edges[e].a = (uint)rnd.Next(particles.Length);
                 edges[e].b = (uint)rnd.Next(particles.Length);
                 edges[e].restLength = 3;
-            }
+            }*/
+            edges = new Edge[0];
+            
         }
     }
 }

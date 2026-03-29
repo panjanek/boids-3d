@@ -46,9 +46,9 @@ namespace Boids3D.Gpu
 
         public int restLengthsBuffer;
 
-        private int currentParticlesCount;
+        private int currentParticlesCount = -1;
         
-        private int currentEdgesCount;
+        private int currentEdgesCount = -1;
 
         private int currentTotalCellsCount;
 
