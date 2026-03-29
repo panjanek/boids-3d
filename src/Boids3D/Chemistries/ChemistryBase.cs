@@ -20,14 +20,31 @@ public abstract class ChemistryBase
     protected uint[] neighbours;
     
     protected bool[] done;
-    protected void InternalInitialize()
+    protected void InternalInitialize(double[] proportion, float[] sizes)
     {
-        this.sim = sim;
         done = new bool[sim.particles.Length];
+        
+        var propTotal = proportion.Sum();
+        proportion = proportion.Select(x => x / propTotal).ToArray();
+        var propSums = new double[proportion.Length];
+        propSums[0] = proportion[0];
+        for (int p = 1; p < proportion.Length; p++)
+            propSums[p] = propSums[p - 1] + proportion[p];
+        
         for(int i=0; i< sim.config.particleCount; i++)
         {
             sim.particles[i].position = new Vector4(sim.config.fieldSize * sim.rnd.NextSingle(), sim.config.fieldSize * sim.rnd.NextSingle(), sim.config.fieldSize * sim.rnd.NextSingle(), 0);
-            sim.particles[i].species = sim.rnd.Next(sim.config.speciesCount);
+
+            var typeRand = sim.rnd.NextDouble();
+            for(int p=0; p<propSums.Length;p++)
+                if (typeRand < propSums[p])
+                {
+                    sim.particles[i].type = p;
+                    break;
+                }
+
+
+            sim.particles[i].size = sizes[sim.particles[i].type];
 
             var dir = new Vector4(sim.rnd.NextSingle() * 2 - 1, sim.rnd.NextSingle() * 2 - 1, sim.rnd.NextSingle() * 2 - 1, 0);
             dir.Normalize();
@@ -47,7 +64,7 @@ public abstract class ChemistryBase
     public virtual void React(int[] cellOffsets, int[] cellCounts, int[] particleIndices, uint[] neighboursStart, uint[] neighboursCount, uint[] neighbours)
     {
         this.cellOffsets = cellOffsets;
-        this. cellCounts = cellCounts;
+        this.cellCounts = cellCounts;
         this.particleIndices = particleIndices;
         this.neighboursStart = neighboursStart;
         this.neighboursCount = neighboursCount;

@@ -13,10 +13,10 @@ namespace Boids3D.Models
     {
         public Vector4 position; // xyz = position
         public Vector4 velocity; // xyz = velocity
-        public int species;
+        public int type;
         public int flags;
         public int cellIndex;
-        public float xzAngle;
+        public float size;
         public float yAngle;
         public int _pad0;
         public int _pad1;
