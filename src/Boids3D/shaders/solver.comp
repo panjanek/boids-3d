@@ -7,14 +7,14 @@ layout(local_size_x = {LocalSizeX}) in;
 struct ShaderConfig {
     int particleCount;
     float dt;
-    float separationRadius;
+    float wallMargin;
     float t;
     float randomization;
     float fieldSize;
     float cellSize;
     float maxDist;
     int speciesCount;
-    float alignRadius;
+    float repulsionForce;
     int trackedIdx;
     float wallForce;
     float cohesionRadius;
@@ -139,22 +139,22 @@ vec4 get_random_01_vec4(Particle p)
     return vec4(x,y,z,0);
 }
 
-void torus_pos(inout vec4 pos)
+void cube_pos(inout vec4 pos)
 {
     if (pos.x >= config.fieldSize)
-        pos.x -= config.fieldSize;
+        pos.x = config.fieldSize;
     else if (pos.x < 0)
-        pos.x += config.fieldSize;
+        pos.x = 0;
 
     if (pos.y >= config.fieldSize)
-        pos.y -= config.fieldSize;
+        pos.y = config.fieldSize;
     else if (pos.y < 0)
-        pos.y += config.fieldSize;
+        pos.y = 0;
 
     if (pos.z >= config.fieldSize)
-        pos.z -= config.fieldSize;
+        pos.z = config.fieldSize;
     else if (pos.z < 0)
-        pos.z += config.fieldSize;
+        pos.z = 0;
 }
 
 float one_wall_force(float d, float m)
@@ -180,7 +180,7 @@ float one_wall_force(float d, float m)
 
 vec4 compute_wall_force(vec4 pos)
 {
-    float margin = config.fieldSize * 0.2;
+    float margin = config.wallMargin;
     
     vec4 wall = vec4(0);
     wall.x = one_wall_force(pos.x, margin);
@@ -270,7 +270,7 @@ void update_one(uint idx)
     vec4 dir = p.direction;
 
     //compute all forces
-    vec4 acc = compute_total_interactions(idx, p, 10);
+    vec4 acc = compute_total_interactions(idx, p, config.repulsionForce);
     //acc = vec4(0,0,0,0);
     
     // spring force
@@ -290,7 +290,7 @@ void update_one(uint idx)
         acc += (d / dist) * (uSpringK * delta);
         
         float targetLestLength = restLengths[neighIdx];
-        float currentLestLength = dist * 0.9 + 0.1 * targetLestLength;
+        float currentLestLength = dist * 0.99 + 0.01 * targetLestLength;
         float diff = (dist - currentLestLength) / dist;
         pos += 0.5 * d * diff;
     }    
@@ -302,18 +302,16 @@ void update_one(uint idx)
     vel += acc * config.dt;    
     
     //clamp speed
-    float uMaxStep = 10;
     float stepLen = length(vel);
-    if (stepLen > uMaxStep)
-        vel *= uMaxStep / stepLen;
+    if (stepLen > config.maxSpeed)
+        vel *= config.maxSpeed / stepLen;
     
     //integrate position
     pos += vel * config.dt;
 
 
     //prepare updated particle struct
-    torus_pos(pos);
-    
+    cube_pos(pos);
     p.position = pos;
     p.velocity = vel;
     p.flags = 0;

@@ -185,20 +185,20 @@
                 <TextBlock Grid.Row="7" Grid.Column="2" Tag="config.maxDist"  FontFamily="Courier New" Margin="0,5,10,0" VerticalAlignment="Center" FontSize="11" MouseDown="infoText_MouseDown" Foreground="White" Background="DarkGray" TextAlignment="Center" Padding="1"/>
 
                 
-                <!-- separationRadius -->
-                <TextBlock Grid.Row="8" Grid.Column="0" Text="separationRadius ⓘ" VerticalAlignment="Center" Margin="10,0,8,0" TextWrapping="Wrap" Foreground="White" ToolTip="separationRadius"/>
-                <Slider Grid.Row="8" Grid.Column="1" Grid.ColumnSpan="1" Minimum="1" Maximum="100" SmallChange="0.1" LargeChange="1" ValueChanged="Slider_ValueChanged" Tag="config.separationRadius" VerticalAlignment="Center"/>
-                <TextBlock Grid.Row="8" Grid.Column="2" Tag="config.separationRadius"  FontFamily="Courier New" Margin="0,5,10,0" VerticalAlignment="Center" FontSize="11" MouseDown="infoText_MouseDown" Foreground="White" Background="DarkGray" TextAlignment="Center" Padding="1"/>
+                <!-- wallMargin -->
+                <TextBlock Grid.Row="8" Grid.Column="0" Text="wallMargin ⓘ" VerticalAlignment="Center" Margin="10,0,8,0" TextWrapping="Wrap" Foreground="White" ToolTip="wallMargin"/>
+                <Slider Grid.Row="8" Grid.Column="1" Grid.ColumnSpan="1" Minimum="1" Maximum="300" SmallChange="0.1" LargeChange="1" ValueChanged="Slider_ValueChanged" Tag="config.wallMargin" VerticalAlignment="Center"/>
+                <TextBlock Grid.Row="8" Grid.Column="2" Tag="config.wallMargin"  FontFamily="Courier New" Margin="0,5,10,0" VerticalAlignment="Center" FontSize="11" MouseDown="infoText_MouseDown" Foreground="White" Background="DarkGray" TextAlignment="Center" Padding="1"/>
                 <!-- separationForce -->
                 <TextBlock Grid.Row="9" Grid.Column="0" Text="separationForce ⓘ" VerticalAlignment="Center" Margin="10,0,8,0" TextWrapping="Wrap" Foreground="White" ToolTip="separationForce"/>
                 <Slider Grid.Row="9" Grid.Column="1" Grid.ColumnSpan="1" Minimum="-1" Maximum="10" SmallChange="0.01" LargeChange="0.1" ValueChanged="Slider_ValueChanged" Tag="config.separationForce" VerticalAlignment="Center"/>
                 <TextBlock Grid.Row="9" Grid.Column="2" Tag="config.separationForce"  FontFamily="Courier New" Margin="0,5,10,0" VerticalAlignment="Center" FontSize="11" MouseDown="infoText_MouseDown" Foreground="White" Background="DarkGray" TextAlignment="Center" Padding="1"/>
 
                 
-                <!-- alignRadius -->
-                <TextBlock Grid.Row="10" Grid.Column="0" Text="alignRadius ⓘ" VerticalAlignment="Center" Margin="10,0,8,0" TextWrapping="Wrap" Foreground="White" ToolTip="alignRadius"/>
-                <Slider Grid.Row="10" Grid.Column="1" Grid.ColumnSpan="1" Minimum="0" Maximum="100" SmallChange="0.1" LargeChange="1" ValueChanged="Slider_ValueChanged" Tag="config.alignRadius" VerticalAlignment="Center"/>
-                <TextBlock Grid.Row="10" Grid.Column="2" Tag="config.alignRadius"  FontFamily="Courier New" Margin="0,5,10,0" VerticalAlignment="Center" FontSize="11" MouseDown="infoText_MouseDown" Foreground="White" Background="DarkGray" TextAlignment="Center" Padding="1"/>
+                <!-- repulsionForce -->
+                <TextBlock Grid.Row="10" Grid.Column="0" Text="repulsionForce ⓘ" VerticalAlignment="Center" Margin="10,0,8,0" TextWrapping="Wrap" Foreground="White" ToolTip="repulsionForce"/>
+                <Slider Grid.Row="10" Grid.Column="1" Grid.ColumnSpan="1" Minimum="0" Maximum="300" SmallChange="0.1" LargeChange="1" ValueChanged="Slider_ValueChanged" Tag="config.repulsionForce" VerticalAlignment="Center"/>
+                <TextBlock Grid.Row="10" Grid.Column="2" Tag="config.repulsionForce"  FontFamily="Courier New" Margin="0,5,10,0" VerticalAlignment="Center" FontSize="11" MouseDown="infoText_MouseDown" Foreground="White" Background="DarkGray" TextAlignment="Center" Padding="1"/>
                 <!-- alignForce -->
                 <TextBlock Grid.Row="11" Grid.Column="0" Text="alignForce ⓘ" VerticalAlignment="Center" Margin="10,0,8,0" TextWrapping="Wrap" Foreground="White" ToolTip="alignForce"/>
                 <Slider Grid.Row="11" Grid.Column="1" Grid.ColumnSpan="1" Minimum="-1" Maximum="10" SmallChange="0.01" LargeChange="0.1" ValueChanged="Slider_ValueChanged" Tag="config.alignForce" VerticalAlignment="Center"/>
@@ -217,7 +217,7 @@
 
                 <!-- attraction -->
                 <TextBlock Grid.Row="14" Grid.Column="0" Text="maxSpeed ⓘ" VerticalAlignment="Center" Margin="10,0,8,0" TextWrapping="Wrap" Foreground="White" ToolTip="maxSpeed"/>
-                <Slider Grid.Row="14" Grid.Column="1" Grid.ColumnSpan="1" Minimum="1" Maximum="100" SmallChange="1" LargeChange="2" ValueChanged="Slider_ValueChanged" Tag="config.maxSpeed" VerticalAlignment="Center"/>
+                <Slider Grid.Row="14" Grid.Column="1" Grid.ColumnSpan="1" Minimum="1" Maximum="300" SmallChange="1" LargeChange="2" ValueChanged="Slider_ValueChanged" Tag="config.maxSpeed" VerticalAlignment="Center"/>
                 <TextBlock Grid.Row="14" Grid.Column="2" Tag="config.maxSpeed"  FontFamily="Courier New" Margin="0,5,10,0" VerticalAlignment="Center" FontSize="11" MouseDown="infoText_MouseDown" Foreground="White" Background="DarkGray" TextAlignment="Center" Padding="1"/>
 
 

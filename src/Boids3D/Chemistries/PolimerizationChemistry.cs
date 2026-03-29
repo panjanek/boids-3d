@@ -70,7 +70,7 @@ public class PolimerizationChemistry : ChemistryBase, IChemistry
                     
                     
                     var distance = (p.position - other.position).Length;
-                    if (distance < 10)
+                    if (distance < 30)
                     {
                         newEdges.Add(new Edge() { a = (uint)idx, b = (uint)otherIdx, restLength = 3 });
                         done[idx] = true;
