@@ -39,6 +39,7 @@ public class HydroCarbonPolimerization : ChemistryBase, IChemistry
 
                 var p = sim.particles[idx];
                 var other = sim.particles[otherIdx];
+                length = p.type == other.type ? 3 : 1.5f;
 
                 if (p.type == 1 && other.type == 1)
                     return false;
@@ -54,7 +55,7 @@ public class HydroCarbonPolimerization : ChemistryBase, IChemistry
                     return false;
                 
                 var distance = (p.position - other.position).Length;
-                if (distance * sim.reactionDistance > 30)
+                if (distance * sim.reactionDistance > 15)
                     return false;
 
                 return true;

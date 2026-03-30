@@ -1,4 +1,5 @@
 ﻿using Boids3D.Models;
+using Boids3D.Utils;
 using OpenTK.Mathematics;
 
 namespace Boids3D.Chemistries;
@@ -87,11 +88,10 @@ public abstract class ChemistryBase
             var locking = new object();
             foreach (var partition in partitions)
             {
-                
-                Parallel.ForEach(partition, cellIndex =>
+                ParallelHelper.ParallelProcess(20, partition, cellIndex =>
                 {
-                    Random rnd = new Random();
-                    List<Edge> threadAddedEdges = new List<Edge>();
+                    var rnd = new Random();
+                    var threadAddedEdges = new List<Edge>();
                     ConnectToNearOneCell(cellIndex, shouldCheck, shouldConnect, rnd, threadAddedEdges);
                     lock (locking)
                     {
