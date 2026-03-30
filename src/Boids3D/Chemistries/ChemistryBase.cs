@@ -7,11 +7,11 @@ public abstract class ChemistryBase
 {
     protected Simulation sim;
 
-    protected int[] cellOffsets;
+    private int[] cellOffsets;
 
-    protected int[] cellCounts;
+    private int[] cellCounts;
 
-    protected int[] particleIndices;
+    private int[] particleIndices;
 
     protected uint[] neighboursStart;
 
@@ -20,9 +20,14 @@ public abstract class ChemistryBase
     protected uint[] neighbours;
     
     protected bool[] done;
+
+    private Edge[] addedEdges;
+
+    private int addedEdgesCount;
     protected void InternalInitialize(double[] proportion, float[] sizes, int[] colors)
     {
         done = new bool[sim.particles.Length];
+        addedEdges = new Edge[sim.particles.Length];
         
         var propTotal = proportion.Sum();
         proportion = proportion.Select(x => x / propTotal).ToArray();
@@ -52,14 +57,6 @@ public abstract class ChemistryBase
             sim.particles[i].direction = dir;
             sim.particles[i].velocity = dir * (10f + sim.rnd.NextSingle() * 20);
         }
-        /*
-        sim.edges = new Edge[sim.config.particleCount/2];
-        for (int e = 0; e < sim.edges.Length; e++)
-        {
-            sim.edges[e].a = (uint)sim.rnd.Next(sim.particles.Length);
-            sim.edges[e].b = (uint)sim.rnd.Next(sim.particles.Length);
-            sim.edges[e].restLength = 3;
-        }*/
     }
 
     public virtual void React(int[] cellOffsets, int[] cellCounts, int[] particleIndices, uint[] neighboursStart, uint[] neighboursCount, uint[] neighbours)
@@ -78,23 +75,31 @@ public abstract class ChemistryBase
     
     protected void ConnectToNear(Func<int, bool> shouldCheck, Func<int, int, float> shouldConnect)
     {
-        var newEdges = new List<Edge>();
+        addedEdgesCount = 0;
         for (int idx = 0; idx < sim.particles.Length; idx++)
         {
             if (shouldCheck(idx))
             {
                 if (ConnectToNearOne(idx, shouldConnect, out var otherIdx, out var length))
                 {
-                    newEdges.Add(new Edge() { a = (uint)idx, b = (uint)otherIdx, restLength = length });
+                    addedEdges[addedEdgesCount].a = (uint)idx;
+                    addedEdges[addedEdgesCount].b = (uint)otherIdx;
+                    addedEdges[addedEdgesCount].restLength = length;
+                    addedEdgesCount++;
                     done[idx] = true;
                     done[otherIdx] = true;
                 }
             }
         }
         
-        var list = sim.edges.ToList();
-        list.AddRange(newEdges);
-        sim.edges = list.ToArray();
+
+        if (addedEdgesCount > 0)
+        {
+            var newEdges = new Edge[sim.edges.Length + addedEdgesCount];
+            Array.Copy(sim.edges, newEdges, sim.edges.Length);
+            Array.Copy(addedEdges, 0, newEdges, sim.edges.Length, addedEdgesCount);
+            sim.edges = newEdges;
+        }
     }
 
 
