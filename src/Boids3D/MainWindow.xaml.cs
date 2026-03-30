@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System.Globalization;
+using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -147,14 +148,17 @@ namespace Boids3D
             if (timespan.TotalSeconds >= 0.0001)
             {
                 double fps = frames / timespan.TotalSeconds;
-                Title = $"Boids3D. " +
+                Title = $"ArtiChem3D. " +
                         $"fps:{fps.ToString("0.0")} "+
-                        $"seed:{app.simulation.seed.ToString()} ";
+                        $"edges:{app.simulation.edges.Length} "+
+                        $"rt: {app.renderer.LastReactionTimeMs.ToString("0.0", CultureInfo.InvariantCulture)}ms";
 
                 if (!string.IsNullOrWhiteSpace(app.configWindow.recordDir))
                 {
                     Title += $"[recording to {app.configWindow.recordDir}] ";
                 }
+
+                app.configWindow.configWindowTitle.Text = Title;
 
                 lastCheckFrameCount = app.renderer.FrameCounter;
                 lastCheckTime = now;

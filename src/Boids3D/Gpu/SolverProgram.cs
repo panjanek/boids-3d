@@ -75,10 +75,14 @@ namespace Boids3D.Gpu
 
         private int stepCount = 0;
         
+        private Stopwatch stopwatch = new Stopwatch();
+        
         
         public int PointsBuffer => pointsBufferB;
         
         public int EdgesBuffer => edgesBuffer;
+
+        public double LastReactionTimeMs { get; private set; }
 
         public SolverProgram()
         {
@@ -179,7 +183,10 @@ namespace Boids3D.Gpu
         {
             DownloadIntBuffer(particleIndices, particleIndicesBuffer, currentParticlesCount);
             DownloadParticles(sim.particles);
+            stopwatch.Restart();
             sim.chemistry.React(cellOffsets, cellCounts, particleIndices, neighboursStart, neighboursCount, neighbours);
+            stopwatch.Stop();
+            LastReactionTimeMs = stopwatch.Elapsed.TotalMilliseconds;
             UploadEdges(sim.edges);
         }
 

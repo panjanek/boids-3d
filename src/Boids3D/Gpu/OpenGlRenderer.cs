@@ -31,6 +31,8 @@ namespace Boids3D.Gpu
         public const float DirectionChangeSpeed = 0.003f;
 
         public int FrameCounter => frameCounter;
+        
+        public double LastReactionTimeMs => solverProgram.LastReactionTimeMs;
 
         public bool Paused { get; set; }
 
@@ -269,7 +271,7 @@ namespace Boids3D.Gpu
         {
             StopTracking();
             //center = new Vector4(app.simulation.config.fieldSize / 2, app.simulation.config.fieldSize / 2, - app.simulation.config.fieldSize *0.5f, 1.0f);
-            center = new Vector4(-app.simulation.config.fieldSize / 2, app.simulation.config.fieldSize / 2, - app.simulation.config.fieldSize, 1.0f);
+            center = new Vector4(-app.simulation.config.fieldSize / 2, app.simulation.config.fieldSize / 2, - app.simulation.config.fieldSize / 2, 1.0f);
             xzAngle = Math.PI * 0.25;
             yAngle = 0;
         }
