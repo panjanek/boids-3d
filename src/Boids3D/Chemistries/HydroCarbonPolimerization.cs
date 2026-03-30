@@ -14,8 +14,11 @@ public class HydroCarbonPolimerization : ChemistryBase, IChemistry
 
     protected override void InternalReact()
     {
-        ConnectToNear(idx =>
+        ConnectToNear((idx, rnd) =>
             {
+                //if (sim.rnd.NextDouble() < 0.99)
+                //    return false;
+                
                 if (done[idx])
                     return false;
                 
@@ -28,7 +31,7 @@ public class HydroCarbonPolimerization : ChemistryBase, IChemistry
 
                 return true;
             },
-            (idx, otherIdx) =>
+            (idx, otherIdx, rnd) =>
             {
                 if (done[otherIdx])
                     return -1;
