@@ -149,19 +149,6 @@
                     <ComboBoxItem>500000</ComboBoxItem>
                     <ComboBoxItem>1000000</ComboBoxItem>
                 </ComboBox>
-                <TextBlock Grid.Row="2" Grid.Column="0" Text="Number of species" Grid.ColumnSpan="1" VerticalAlignment="Center" Margin="10,5,5,0" Foreground="White" TextWrapping="Wrap"/>
-                <ComboBox Name="speciesCount" Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2" SelectionChanged="global_SelectionChanged" Margin="0,5,10,0">
-                    <ComboBoxItem>1</ComboBoxItem>
-                    <ComboBoxItem>2</ComboBoxItem>
-                    <ComboBoxItem>3</ComboBoxItem>
-                    <ComboBoxItem>4</ComboBoxItem>
-                    <ComboBoxItem>5</ComboBoxItem>
-                    <ComboBoxItem IsSelected="True">6</ComboBoxItem>
-                    <ComboBoxItem>7</ComboBoxItem>
-                    <ComboBoxItem>8</ComboBoxItem>
-                    <ComboBoxItem>9</ComboBoxItem>
-                    <ComboBoxItem>10</ComboBoxItem>
-                </ComboBox>
                 <TextBlock Grid.Row="3" Grid.Column="0" Text="Size of the field" Grid.ColumnSpan="1" VerticalAlignment="Center" Margin="10,5,5,0" Foreground="White" TextWrapping="Wrap"/>
                 <ComboBox Name="fieldSize" Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="2" SelectionChanged="global_SelectionChanged" Margin="0,5,10,0">
                     <ComboBoxItem>300x300x300</ComboBoxItem>

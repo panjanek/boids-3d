@@ -119,22 +119,19 @@ namespace Boids3D.Gui
 
         private void global_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (fieldSize != null && particlesCount != null && speciesCount!=null && !updating)
+            if (fieldSize != null && particlesCount != null && !updating)
             {
                 var newParticleCountStr = WpfUtil.GetComboSelectionAsString(particlesCount);
-                var newSpeciesCountStr = WpfUtil.GetComboSelectionAsString(speciesCount);
                 var newSizeStr = WpfUtil.GetComboSelectionAsString(fieldSize);
-                if (!string.IsNullOrWhiteSpace(newParticleCountStr) && !string.IsNullOrWhiteSpace(newSpeciesCountStr) && !string.IsNullOrWhiteSpace(newSizeStr))
+                if (!string.IsNullOrWhiteSpace(newParticleCountStr) && !string.IsNullOrWhiteSpace(newSizeStr))
                 {
                     var newParticleCount = int.Parse(newParticleCountStr);
-                    var newSpeciesCount = int.Parse(newSpeciesCountStr);
                     var sizeSplit = newSizeStr.Split('x');
                     var newSize = int.Parse(sizeSplit[0]);
                     if (newParticleCount != app.simulation.config.particleCount ||
-                        newSpeciesCount != app.simulation.config.speciesCount ||
                         newSize != app.simulation.config.fieldSize)
                     {
-                        app.simulation.StartSimulation(newParticleCount, newSpeciesCount, newSize);
+                        app.simulation.StartSimulation(newParticleCount, newSize);
                         app.renderer.UploadParticleData();
                         UpdateActiveControls();
                         UpdatePassiveControls();
@@ -176,7 +173,6 @@ namespace Boids3D.Gui
             updating = true;
             WpfUtil.SetComboStringSelection(fieldSize, $"{app.simulation.config.fieldSize}x{app.simulation.config.fieldSize}x{app.simulation.config.fieldSize}");
             WpfUtil.SetComboStringSelection(particlesCount, app.simulation.config.particleCount.ToString());
-            WpfUtil.SetComboStringSelection(speciesCount, app.simulation.config.speciesCount.ToString());
             foreach (var slider in WpfUtil.FindVisualChildren<Slider>(this))
             {
                 var tag = WpfUtil.GetTagAsString(slider);

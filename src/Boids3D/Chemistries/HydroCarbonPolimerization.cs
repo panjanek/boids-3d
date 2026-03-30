@@ -1,0 +1,69 @@
+﻿using Boids3D.Models;
+using OpenTK.Graphics.ES30;
+using OpenTK.Mathematics;
+
+namespace Boids3D.Chemistries;
+
+public class HydroCarbonPolimerization : ChemistryBase, IChemistry
+{
+    public void Initialize(Simulation sim)
+    {
+        this.sim = sim;
+        InternalInitialize([1, 3], [2,1], [0, 1]);
+    }
+
+    protected override void InternalReact()
+    {
+        ConnectToNear(idx =>
+            {
+                if (done[idx])
+                    return false;
+                
+                var p = sim.particles[idx];
+                if (p.type == 1 && neighboursCount[idx] >= 1) //hydrogen: only one link
+                    return false;
+                
+                if (p.type == 0 && neighboursCount[idx] >= 4)  //carbon: max 4
+                    return false;
+
+                return true;
+            },
+            (idx, otherIdx) =>
+            {
+                if (done[otherIdx])
+                    return -1;
+
+                var p = sim.particles[idx];
+                var other = sim.particles[otherIdx];
+
+                if (p.type == 1 && other.type == 1) 
+                    return -1;
+
+                if (other.type == 0 && neighboursCount[otherIdx] >= 4)
+                    return -1;
+                
+                if (other.type == 1 && neighboursCount[otherIdx] >= 1)
+                    return -1;
+                
+                if (p.type==0 && other.type == 0 && (CountImmediateConnections(idx, 0) >= 2 || CountImmediateConnections(otherIdx, 0) >= 2))
+                    return -1;
+                
+                var distance = (p.position - other.position).Length;
+                if (distance * sim.reactionDistance > 30)
+                    return -1;
+
+                return 3;
+            });
+
+        /*
+        var dupl = sim.edges.GroupBy(e =>
+        new {
+            e.a, e.b
+        }).Where(g=>g.Count() > 1).ToList();
+        if (dupl.Count() > 0)
+        {
+            var a = dupl.Count();
+            Console.WriteLine(dupl);
+        }*/
+    }
+}

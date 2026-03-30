@@ -35,7 +35,8 @@ public abstract class ChemistryBase
         propSums[0] = proportion[0];
         for (int p = 1; p < proportion.Length; p++)
             propSums[p] = propSums[p - 1] + proportion[p];
-        
+
+        sim.config.speciesCount = proportion.Length;
         for(int i=0; i< sim.config.particleCount; i++)
         {
             sim.particles[i].position = new Vector4(sim.config.fieldSize * sim.rnd.NextSingle(), sim.config.fieldSize * sim.rnd.NextSingle(), sim.config.fieldSize * sim.rnd.NextSingle(), 0);
@@ -101,6 +102,43 @@ public abstract class ChemistryBase
             sim.edges = newEdges;
         }
     }
+    
+    protected bool AreImmediatelyConnected(int idx, int idx2)
+    {
+        uint neighCount = neighboursCount[idx];
+        if (neighCount == 0)
+            return false;
+        
+        uint neighStart = neighboursStart[idx];
+        for (uint i = 0; i < neighCount; i++)
+        {
+            uint neighIdx = neighStart + i;
+            uint otherIdx = neighbours[neighIdx];
+            if (otherIdx == idx2)
+                return true;
+        }
+
+        return false;
+    }
+    
+    protected int CountImmediateConnections(int idx, int type)
+    {
+        uint neighCount = neighboursCount[idx];
+        if (neighCount == 0)
+            return 0;
+        
+        int count = 0;
+        uint neighStart = neighboursStart[idx];
+        for (uint i = 0; i < neighCount; i++)
+        {
+            uint neighIdx = neighStart + i;
+            uint otherIdx = neighbours[neighIdx];
+            if (sim.particles[otherIdx].type == type)
+                count++;
+        }
+
+        return count;
+    }
 
 
     private bool ConnectToNearOne(int idx, Func<int, int, float> shouldConnect, out int connectTo, out float length)
@@ -130,7 +168,7 @@ public abstract class ChemistryBase
             for (int indiceIdx = offset; indiceIdx < offset + count; indiceIdx++)
             {
                 int otherIdx = particleIndices[indiceIdx];
-                if (idx != otherIdx)
+                if (idx != otherIdx && !AreImmediatelyConnected(idx, otherIdx))
                 {
                     var connection = shouldConnect(idx, otherIdx);
                     if (connection > 0)

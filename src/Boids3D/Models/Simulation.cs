@@ -48,10 +48,9 @@ namespace Boids3D.Models
             config = new ShaderConfig();
         }
 
-        public void StartSimulation(int particlesCount, int speciesCount, float size)
+        public void StartSimulation(int particlesCount, float size)
         {
             var previousSpeciesCount = config.speciesCount;
-            config.speciesCount = speciesCount;
             config.fieldSize = size;
             config.particleCount = particlesCount;
             InitializeParticles(particlesCount);
