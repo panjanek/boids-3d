@@ -31,31 +31,33 @@ public class HydroCarbonPolimerization : ChemistryBase, IChemistry
 
                 return true;
             },
-            (idx, otherIdx, rnd) =>
+            (int idx, int otherIdx, Random rnd, out float length) =>
             {
+                length = 3;
                 if (done[otherIdx])
-                    return -1;
+                    return false;
 
                 var p = sim.particles[idx];
                 var other = sim.particles[otherIdx];
 
-                if (p.type == 1 && other.type == 1) 
-                    return -1;
+                if (p.type == 1 && other.type == 1)
+                    return false;
 
                 if (other.type == 0 && neighboursCount[otherIdx] >= 4)
-                    return -1;
-                
+                    return false;
+
                 if (other.type == 1 && neighboursCount[otherIdx] >= 1)
-                    return -1;
-                
-                if (p.type==0 && other.type == 0 && (CountImmediateConnections(idx, 0) >= 2 || CountImmediateConnections(otherIdx, 0) >= 2))
-                    return -1;
+                    return false;
+
+                if (p.type == 0 && other.type == 0 && (CountImmediateConnections(idx, 0) >= 2 ||
+                                                       CountImmediateConnections(otherIdx, 0) >= 2))
+                    return false;
                 
                 var distance = (p.position - other.position).Length;
                 if (distance * sim.reactionDistance > 30)
-                    return -1;
+                    return false;
 
-                return 3;
+                return true;
             });
 
         /*

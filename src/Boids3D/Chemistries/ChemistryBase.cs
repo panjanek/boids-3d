@@ -74,7 +74,7 @@ public abstract class ChemistryBase
 
     protected abstract void InternalReact();
     
-    protected void ConnectToNear(Func<int, Random, bool> shouldCheck, Func<int, int, Random, float> shouldConnect, bool parallel = false)
+    protected void ConnectToNear(Func<int, Random, bool> shouldCheck, ShouldConnectDelegate shouldConnect, bool parallel = false)
     {
         addedEdgesCount = 0;
         for (int cellIndex = 0; cellIndex < sim.config.totalCellCount; cellIndex++)
@@ -92,7 +92,7 @@ public abstract class ChemistryBase
         sim.edges = newEdges;
     }
 
-    private void ConnectToNearOneCell(int cellIndex, Func<int, Random, bool> shouldCheck, Func<int, int, Random, float> shouldConnect, Random rnd)
+    private void ConnectToNearOneCell(int cellIndex, Func<int, Random, bool> shouldCheck, ShouldConnectDelegate shouldConnect, Random rnd)
     {
         int mainOffset = cellOffsets[cellIndex];
         int mainCount = cellCounts[cellIndex];
@@ -129,12 +129,11 @@ public abstract class ChemistryBase
                     int otherIdx = particleIndices[otherIndiceIdx];
                     if (idx != otherIdx && !AreImmediatelyConnected(idx, otherIdx))
                     {
-                        var connection = shouldConnect(idx, otherIdx, rnd);
-                        if (connection > 0)
+                        if (shouldConnect(idx, otherIdx, rnd, out var length))
                         {
                             addedEdges[addedEdgesCount].a = (uint)idx;
                             addedEdges[addedEdgesCount].b = (uint)otherIdx;
-                            addedEdges[addedEdgesCount].restLength = connection;
+                            addedEdges[addedEdgesCount].restLength = length;
                             addedEdgesCount++;
                             done[idx] = true;
                             done[otherIdx] = true;
