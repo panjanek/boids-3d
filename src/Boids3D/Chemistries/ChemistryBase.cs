@@ -77,11 +77,19 @@ public abstract class ChemistryBase
     protected void ConnectToNear(Func<int, bool> shouldCheck, Func<int, int, float> shouldConnect)
     {
         addedEdgesCount = 0;
+
+        for (int cellIndex = 0; cellIndex < sim.config.totalCellCount; cellIndex++)
+            ConnectToNearOneCell(cellIndex, shouldCheck, shouldConnect);
+        
+        
+        
+        
+        /*
         for (int idx = 0; idx < sim.particles.Length; idx++)
         {
             if (shouldCheck(idx))
             {
-                if (ConnectToNearOne(idx, shouldConnect, out var otherIdx, out var length))
+                if (ConnectToNearSingleParticle(idx, shouldConnect, out var otherIdx, out var length))
                 {
                     addedEdges[addedEdgesCount].a = (uint)idx;
                     addedEdges[addedEdgesCount].b = (uint)otherIdx;
@@ -91,7 +99,7 @@ public abstract class ChemistryBase
                     done[otherIdx] = true;
                 }
             }
-        }
+        }*/
         
 
         if (addedEdgesCount > 0)
@@ -100,6 +108,64 @@ public abstract class ChemistryBase
             Array.Copy(sim.edges, newEdges, sim.edges.Length);
             Array.Copy(addedEdges, 0, newEdges, sim.edges.Length, addedEdgesCount);
             sim.edges = newEdges;
+        }
+    }
+
+    private void ConnectToNearOneCell(int cellIndex, Func<int, bool> shouldCheck, Func<int, int, float> shouldConnect)
+    {
+        int mainOffset = cellOffsets[cellIndex];
+        int mainCount = cellCounts[cellIndex];
+        
+        int cellCount2 = sim.config.cellCount * sim.config.cellCount;
+        int gridX = cellIndex % sim.config.cellCount;
+        int gridY = (cellIndex / sim.config.cellCount) % sim.config.cellCount;
+        int gridZ = cellIndex / (cellCount2);
+        var main = new Vector3i(gridX, gridY, gridZ);
+
+        for (int mainIndiceIdx = mainOffset; mainIndiceIdx < mainOffset + mainCount; mainIndiceIdx++)
+        {
+            int idx = particleIndices[mainIndiceIdx];
+            if (!shouldCheck(idx))
+                continue;
+
+            for (int dz = -1; dz <= 1; dz++)
+            for (int dy = -1; dy <= 1; dy++)
+            for (int dx = -1; dx <= 1; dx++)
+            {
+                Vector3i otherCell = main + new Vector3i(dx, dy, dz);
+                if (otherCell.X < 0 || otherCell.X >= sim.config.cellCount ||
+                    otherCell.Y < 0 || otherCell.Y >= sim.config.cellCount ||
+                    otherCell.Z < 0 || otherCell.Z >= sim.config.cellCount)
+                    continue;
+
+                int otherCellIdx = otherCell.X +
+                                   otherCell.Y * sim.config.cellCount +
+                                   otherCell.Z * cellCount2;
+                int otherOffset = cellOffsets[otherCellIdx];
+                int otherCount = cellCounts[otherCellIdx];
+                for (int otherIndiceIdx = otherOffset; otherIndiceIdx < otherOffset + otherCount; otherIndiceIdx++)
+                {
+                    int otherIdx = particleIndices[otherIndiceIdx];
+                    if (idx != otherIdx && !AreImmediatelyConnected(idx, otherIdx))
+                    {
+                        var connection = shouldConnect(idx, otherIdx);
+                        if (connection > 0)
+                        {
+                            addedEdges[addedEdgesCount].a = (uint)idx;
+                            addedEdges[addedEdgesCount].b = (uint)otherIdx;
+                            addedEdges[addedEdgesCount].restLength = connection;
+                            addedEdgesCount++;
+                            done[idx] = true;
+                            done[otherIdx] = true;
+                            goto ContinueIdx;
+                        }
+                    }
+                }
+            }
+            
+            ContinueIdx:
+            continue;
+            
         }
     }
     
@@ -141,7 +207,7 @@ public abstract class ChemistryBase
     }
 
 
-    private bool ConnectToNearOne(int idx, Func<int, int, float> shouldConnect, out int connectTo, out float length)
+    private bool ConnectToNearSingleParticle(int idx, Func<int, int, float> shouldConnect, out int connectTo, out float length)
     {
         var p = sim.particles[idx];
         int cellCount2 = sim.config.cellCount * sim.config.cellCount;
