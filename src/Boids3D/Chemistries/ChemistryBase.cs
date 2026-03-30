@@ -13,6 +13,10 @@ public abstract class ChemistryBase
 
     private int[] particleIndices;
 
+    private int currentCellCount = -1;
+
+    private List<int>[] partitions;
+
     protected uint[] neighboursStart;
 
     protected uint[] neighboursCount;
@@ -74,14 +78,60 @@ public abstract class ChemistryBase
 
     protected abstract void InternalReact();
     
-    protected void ConnectToNear(Func<int, Random, bool> shouldCheck, ShouldConnectDelegate shouldConnect, bool parallel = false)
+    protected void ConnectToNear(Func<int, Random, bool> shouldCheck, ShouldConnectDelegate shouldConnect, bool parallel = true)
     {
-        addedEdgesCount = 0;
-        for (int cellIndex = 0; cellIndex < sim.config.totalCellCount; cellIndex++)
-            ConnectToNearOneCell(cellIndex, shouldCheck, shouldConnect, sim.rnd);
+        if (parallel)
+        {
+            CreatePartitions();
+            var totalAddedEdges = new List<Edge>();
+            var locking = new object();
+            foreach (var partition in partitions)
+            {
+                
+                Parallel.ForEach(partition, cellIndex =>
+                {
+                    Random rnd = new Random();
+                    List<Edge> threadAddedEdges = new List<Edge>();
+                    ConnectToNearOneCell(cellIndex, shouldCheck, shouldConnect, rnd, threadAddedEdges);
+                    lock (locking)
+                    {
+                        totalAddedEdges.AddRange(threadAddedEdges);
+                    }
+                });
+            }
+            
+            if (totalAddedEdges.Count > 0)
+                AddEdges(totalAddedEdges.ToArray(), totalAddedEdges.Count);
+        }
+        else
+        {
+            addedEdgesCount = 0;
+            for (int cellIndex = 0; cellIndex < sim.config.totalCellCount; cellIndex++)
+                ConnectToNearOneCell(cellIndex, shouldCheck, shouldConnect, sim.rnd);
 
-        if (addedEdgesCount > 0)
-            AddEdges(addedEdges, addedEdgesCount);
+            if (addedEdgesCount > 0)
+                AddEdges(addedEdges, addedEdgesCount);
+        }
+    }
+
+    private void CreatePartitions()
+    {
+        if (currentCellCount != sim.config.cellCount)
+        {
+            currentCellCount = sim.config.cellCount;
+            partitions = new List<int>[27];
+            for (int i = 0; i < 27; i++)
+                partitions[i] = new List<int>();
+            int cellCount2 = sim.config.cellCount * sim.config.cellCount;
+            for (int cellIndex = 0; cellIndex < sim.config.totalCellCount; cellIndex++)
+            {
+                int gridX = cellIndex % sim.config.cellCount;
+                int gridY = (cellIndex / sim.config.cellCount) % sim.config.cellCount;
+                int gridZ = cellIndex / (cellCount2);
+                int partitionIdx = (gridX % 3) * 9 + (gridY % 3) * 3 + (gridZ % 3);
+                partitions[partitionIdx].Add(cellIndex);
+            }
+        }
     }
 
     private void AddEdges(Edge[] addedEdgesArg, int addedEdgesCountArg)
@@ -92,7 +142,7 @@ public abstract class ChemistryBase
         sim.edges = newEdges;
     }
 
-    private void ConnectToNearOneCell(int cellIndex, Func<int, Random, bool> shouldCheck, ShouldConnectDelegate shouldConnect, Random rnd)
+    private void ConnectToNearOneCell(int cellIndex, Func<int, Random, bool> shouldCheck, ShouldConnectDelegate shouldConnect, Random rnd, List<Edge> producedEdges = null)
     {
         int mainOffset = cellOffsets[cellIndex];
         int mainCount = cellCounts[cellIndex];
@@ -131,10 +181,19 @@ public abstract class ChemistryBase
                     {
                         if (shouldConnect(idx, otherIdx, rnd, out var length))
                         {
-                            addedEdges[addedEdgesCount].a = (uint)idx;
-                            addedEdges[addedEdgesCount].b = (uint)otherIdx;
-                            addedEdges[addedEdgesCount].restLength = length;
-                            addedEdgesCount++;
+                            if (producedEdges == null)
+                            {
+                                addedEdges[addedEdgesCount].a = (uint)idx;
+                                addedEdges[addedEdgesCount].b = (uint)otherIdx;
+                                addedEdges[addedEdgesCount].restLength = length;
+                                addedEdgesCount++;
+                            }
+                            else
+                            {
+                                producedEdges.Add(new Edge(){ a=(uint)idx, b=(uint)otherIdx, restLength = length});
+                                
+                            }
+
                             done[idx] = true;
                             done[otherIdx] = true;
                             goto ContinueIdx;
