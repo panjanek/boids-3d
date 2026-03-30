@@ -165,7 +165,62 @@ public abstract class ChemistryBase
             
             ContinueIdx:
             continue;
-            
+        }
+    }
+    private void ConnectToNearOneCell2(int cellIndex, Func<int, bool> shouldCheck, Func<int, int, float> shouldConnect)
+    {
+        int mainOffset = cellOffsets[cellIndex];
+        int mainCount = cellCounts[cellIndex];
+        
+        int cellCount2 = sim.config.cellCount * sim.config.cellCount;
+        int gridX = cellIndex % sim.config.cellCount;
+        int gridY = (cellIndex / sim.config.cellCount) % sim.config.cellCount;
+        int gridZ = cellIndex / (cellCount2);
+        var main = new Vector3i(gridX, gridY, gridZ);
+
+        for (int dz = -1; dz <= 1; dz++)
+        for (int dy = -1; dy <= 1; dy++)
+        for (int dx = -1; dx <= 1; dx++)
+        {
+            Vector3i otherCell = main + new Vector3i(dx, dy, dz);
+            if (otherCell.X < 0 || otherCell.X >= sim.config.cellCount ||
+                otherCell.Y < 0 || otherCell.Y >= sim.config.cellCount ||
+                otherCell.Z < 0 || otherCell.Z >= sim.config.cellCount)
+                continue;
+
+            int otherCellIdx = otherCell.X +
+                               otherCell.Y * sim.config.cellCount +
+                               otherCell.Z * cellCount2;
+            int otherOffset = cellOffsets[otherCellIdx];
+            int otherCount = cellCounts[otherCellIdx];
+            for (int otherIndiceIdx = otherOffset; otherIndiceIdx < otherOffset + otherCount; otherIndiceIdx++)
+            {
+                int otherIdx = particleIndices[otherIndiceIdx];
+                if (!shouldCheck(otherIdx))
+                    continue;
+
+                for (int mainIndiceIdx = mainOffset; mainIndiceIdx < mainOffset + mainCount; mainIndiceIdx++)
+                {
+                    int idx = particleIndices[mainIndiceIdx];
+                    if (idx != otherIdx && !AreImmediatelyConnected(idx, otherIdx))
+                    {
+                        var connection = shouldConnect(otherIdx, idx);
+                        if (connection > 0)
+                        {
+                            addedEdges[addedEdgesCount].a = (uint)idx;
+                            addedEdges[addedEdgesCount].b = (uint)otherIdx;
+                            addedEdges[addedEdgesCount].restLength = connection;
+                            addedEdgesCount++;
+                            done[idx] = true;
+                            done[otherIdx] = true;
+                            goto ContinueIdx;
+                        }
+                    }
+
+                }
+                ContinueIdx:
+                continue;
+            }
         }
     }
     
