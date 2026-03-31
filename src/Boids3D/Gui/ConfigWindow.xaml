@@ -140,25 +140,36 @@
                     <ComboBoxItem>1000</ComboBoxItem>
                     <ComboBoxItem>2500</ComboBoxItem>
                     <ComboBoxItem>5000</ComboBoxItem>
-                    <ComboBoxItem IsSelected="True">10000</ComboBoxItem>
+                    <ComboBoxItem>10000</ComboBoxItem>
                     <ComboBoxItem>25000</ComboBoxItem>
                     <ComboBoxItem>50000</ComboBoxItem>
-                    <ComboBoxItem>100000</ComboBoxItem>
+                    <ComboBoxItem IsSelected="True">100000</ComboBoxItem>
                     <ComboBoxItem>200000</ComboBoxItem>
                     <ComboBoxItem>300000</ComboBoxItem>
                     <ComboBoxItem>500000</ComboBoxItem>
                     <ComboBoxItem>1000000</ComboBoxItem>
                 </ComboBox>
-                <TextBlock Grid.Row="3" Grid.Column="0" Text="Size of the field" Grid.ColumnSpan="1" VerticalAlignment="Center" Margin="10,5,5,0" Foreground="White" TextWrapping="Wrap"/>
-                <ComboBox Name="fieldSize" Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="2" SelectionChanged="global_SelectionChanged" Margin="0,5,10,0">
+                <TextBlock Grid.Row="2" Grid.Column="0" Text="Size of the field" Grid.ColumnSpan="1" VerticalAlignment="Center" Margin="10,5,5,0" Foreground="White" TextWrapping="Wrap"/>
+                <ComboBox Name="fieldSize" Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2" SelectionChanged="global_SelectionChanged" Margin="0,5,10,0">
                     <ComboBoxItem>300x300x300</ComboBoxItem>
                     <ComboBoxItem>500x500x500</ComboBoxItem>
-                    <ComboBoxItem IsSelected="True">800x800x800</ComboBoxItem>
-                    <ComboBoxItem>1000x1000x1000</ComboBoxItem>
+                    <ComboBoxItem>800x800x800</ComboBoxItem>
+                    <ComboBoxItem IsSelected="True">1000x1000x1000</ComboBoxItem>
                     <ComboBoxItem>1500x1500x1500</ComboBoxItem>
                     <ComboBoxItem>2000x2000x2000</ComboBoxItem>
                     <ComboBoxItem>5000x5000x5000</ComboBoxItem>
                     <ComboBoxItem>10000x10000x10000</ComboBoxItem>
+                </ComboBox>
+                
+                <TextBlock Grid.Row="3" Grid.Column="0" Text="Reactions" Grid.ColumnSpan="1" VerticalAlignment="Center" Margin="10,5,5,0" Foreground="White" TextWrapping="Wrap"/>
+                <ComboBox Name="reactionFreq" Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="2" SelectionChanged="global_SelectionChanged" Margin="0,5,10,0">
+                    <ComboBoxItem Tag="0">Stopped</ComboBoxItem>
+                    <ComboBoxItem Tag="1">Each frame</ComboBoxItem>
+                    <ComboBoxItem Tag="10">Each 10nth frame</ComboBoxItem>
+                    <ComboBoxItem Tag="50">Each 50 frames</ComboBoxItem>
+                    <ComboBoxItem Tag="100" IsSelected="True">Each 100 frames</ComboBoxItem>
+                    <ComboBoxItem Tag="300">Each 300 frames</ComboBoxItem>
+                    <ComboBoxItem Tag="1000">Each 1000 frames</ComboBoxItem>
                 </ComboBox>
   
                 <!-- dt -->

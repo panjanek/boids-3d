@@ -31,6 +31,7 @@ namespace Boids3D.Gui
         private bool updating;
 
         public string recordDir;
+        
         public ConfigWindow(AppContext app)
         {
             this.app = app;
@@ -90,6 +91,12 @@ namespace Boids3D.Gui
                         app.renderer.Paused = true;
                     }
                 }
+            };
+
+            reactionFreq.SelectionChanged += (s, e) =>
+            {
+                app.simulation.reactionsFrequency = WpfUtil.GetTagAsInt(reactionFreq.SelectedItem);
+
             };
 
             KeyDown += (s, e) => app.mainWindow.MainWindow_KeyDown(s, e);

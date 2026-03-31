@@ -22,8 +22,6 @@ namespace Boids3D
 {
     using Models_AppContext = Models.AppContext;
     
-    //TODO:
-    // - smooth zooming
 
     public partial class MainWindow : Window
     {

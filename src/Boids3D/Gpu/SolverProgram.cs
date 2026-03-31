@@ -152,7 +152,7 @@ namespace Boids3D.Gpu
             
             // ------------------------- reactions --------------------------
             stepCount++;
-            if (stepCount % 100 == 0)
+            if (sim.reactionsFrequency > 0 && stepCount % sim.reactionsFrequency == 0)
                 Reaction(sim);
             
             // ------------------------ run solver --------------------------
