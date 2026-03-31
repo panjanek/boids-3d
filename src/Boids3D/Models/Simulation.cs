@@ -29,6 +29,8 @@ namespace Boids3D.Models
         
         public float reactionDistance = 1f;
 
+        public float reactionProbability = 0.5f;
+
         [JsonIgnore]
         public Particle[] particles;
         

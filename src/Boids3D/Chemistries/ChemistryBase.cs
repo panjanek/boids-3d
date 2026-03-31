@@ -154,6 +154,9 @@ public abstract class ChemistryBase
                                       ShouldConnectDelegate shouldConnect, Random rnd, 
                                       List<Edge> producedEdges = null)
     {
+        if (rnd.NextSingle() > sim.reactionProbability)
+            return;
+        
         float maxDistanceSquared = maxDistance * maxDistance;
         int mainOffset = cellOffsets[cellIndex];
         int mainCount = cellCounts[cellIndex];
