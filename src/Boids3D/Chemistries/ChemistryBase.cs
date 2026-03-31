@@ -159,6 +159,8 @@ public abstract class ChemistryBase
             if (!shouldCheck(idx, rnd))
                 continue;
 
+            List<NearParticle> near = new List<NearParticle>();
+
             for (int dz = -1; dz <= 1; dz++)
             for (int dy = -1; dy <= 1; dy++)
             for (int dx = -1; dx <= 1; dx++)
@@ -179,6 +181,9 @@ public abstract class ChemistryBase
                     int otherIdx = particleIndices[otherIndiceIdx];
                     if (idx != otherIdx && !AreImmediatelyConnected(idx, otherIdx))
                     {
+                        near.Add(new NearParticle() { particleIndex = otherIdx, distance =  0 });
+                        
+                        /*
                         if (shouldConnect(idx, otherIdx, rnd, out var length))
                         {
                             if (producedEdges == null)
@@ -197,13 +202,42 @@ public abstract class ChemistryBase
                             done[idx] = true;
                             done[otherIdx] = true;
                             goto ContinueIdx;
-                        }
+                        }*/
                     }
                 }
             }
             
-            ContinueIdx:
-            continue;
+            //ContinueIdx:
+            //continue;
+
+
+            for (int k = 0; k < near.Count; k++)
+            {
+                int otherIdx = near[k].particleIndex;
+                if (shouldConnect(idx, otherIdx, rnd, out var length))
+                {
+                    if (producedEdges == null)
+                    {
+                        addedEdges[addedEdgesCount].a = (uint)idx;
+                        addedEdges[addedEdgesCount].b = (uint)otherIdx;
+                        addedEdges[addedEdgesCount].restLength = length;
+                        addedEdgesCount++;
+                    }
+                    else
+                    {
+                        producedEdges.Add(new Edge(){ a=(uint)idx, b=(uint)otherIdx, restLength = length});
+                                
+                    }
+
+                    done[idx] = true;
+                    done[otherIdx] = true;
+                    //goto ContinueIdx;
+                    break;
+                }
+            }
+            
+            
+            
         }
     }
     
@@ -246,3 +280,10 @@ public abstract class ChemistryBase
 }
 
 public delegate bool ShouldConnectDelegate(int idx, int otherIdx, Random rnd, out float length);
+
+public struct NearParticle
+{
+    public int particleIndex;
+
+    public float distance;
+}
