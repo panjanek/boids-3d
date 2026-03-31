@@ -14,21 +14,17 @@ public class SimplePolimerization : ChemistryBase, IChemistry
 
     protected override void InternalReact()
     {
-        ConnectToNear((idx, rnd) =>
+        ConnectToNear(30, (idx, rnd) =>
             {
                 return neighboursCount[idx] < 2 && !done[idx];
             },
-            (int idx, int otherIdx, Random rnd, out float length) =>
+            (int idx, int otherIdx, float distanceSquared, Random rnd, out float length) =>
             {
                 length = 3;
                 if (done[otherIdx] || neighboursCount[otherIdx] >= 2)
                     return false;
 
-                var p = sim.particles[idx];
-                var other = sim.particles[otherIdx];
-                var distance = (p.position - other.position).Length;
-                return distance < 30 * sim.reactionDistance;
+                return true;
             });
-        
     }
 }

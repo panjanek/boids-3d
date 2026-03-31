@@ -79,8 +79,9 @@ public abstract class ChemistryBase
 
     protected abstract void InternalReact();
     
-    protected void ConnectToNear(Func<int, Random, bool> shouldCheck, ShouldConnectDelegate shouldConnect, bool parallel = true)
+    protected void ConnectToNear(float maxDistance, Func<int, Random, bool> shouldCheck, ShouldConnectDelegate shouldConnect, bool parallel = true)
     {
+        maxDistance = maxDistance * sim.reactionDistance;
         if (parallel)
         {
             CreatePartitions();
@@ -92,7 +93,7 @@ public abstract class ChemistryBase
                 {
                     var rnd = new Random();
                     var threadAddedEdges = new List<Edge>();
-                    ConnectToNearOneCell(cellIndex, shouldCheck, shouldConnect, rnd, threadAddedEdges);
+                    ConnectToNearOneCell(maxDistance, cellIndex, shouldCheck, shouldConnect, rnd, threadAddedEdges);
                     lock (locking)
                     {
                         totalAddedEdges.AddRange(threadAddedEdges);
@@ -107,7 +108,7 @@ public abstract class ChemistryBase
         {
             addedEdgesCount = 0;
             for (int cellIndex = 0; cellIndex < sim.config.totalCellCount; cellIndex++)
-                ConnectToNearOneCell(cellIndex, shouldCheck, shouldConnect, sim.rnd);
+                ConnectToNearOneCell(maxDistance, cellIndex, shouldCheck, shouldConnect, sim.rnd);
 
             if (addedEdgesCount > 0)
                 AddEdges(addedEdges, addedEdgesCount);
@@ -142,8 +143,12 @@ public abstract class ChemistryBase
         sim.edges = newEdges;
     }
 
-    private void ConnectToNearOneCell(int cellIndex, Func<int, Random, bool> shouldCheck, ShouldConnectDelegate shouldConnect, Random rnd, List<Edge> producedEdges = null)
+    private void ConnectToNearOneCell(float maxDistance, 
+                                      int cellIndex, Func<int, Random, bool> shouldCheck, 
+                                      ShouldConnectDelegate shouldConnect, Random rnd, 
+                                      List<Edge> producedEdges = null)
     {
+        float maxDistanceSquared = maxDistance * maxDistance;
         int mainOffset = cellOffsets[cellIndex];
         int mainCount = cellCounts[cellIndex];
         
@@ -153,14 +158,19 @@ public abstract class ChemistryBase
         int gridZ = cellIndex / (cellCount2);
         var main = new Vector3i(gridX, gridY, gridZ);
 
+        NearParticleComparer comparer = new NearParticleComparer();
+        var maxNearParticlesCount = CountParticlesInAdjacentCells(main);
+        NearParticle[] near = new NearParticle[maxNearParticlesCount];
+       
+
         for (int mainIndiceIdx = mainOffset; mainIndiceIdx < mainOffset + mainCount; mainIndiceIdx++)
         {
             int idx = particleIndices[mainIndiceIdx];
             if (!shouldCheck(idx, rnd))
                 continue;
 
-            List<NearParticle> near = new List<NearParticle>();
-
+            // prepare array of near particles
+            int nearCount = 0;
             for (int dz = -1; dz <= 1; dz++)
             for (int dy = -1; dy <= 1; dy++)
             for (int dx = -1; dx <= 1; dx++)
@@ -179,42 +189,22 @@ public abstract class ChemistryBase
                 for (int otherIndiceIdx = otherOffset; otherIndiceIdx < otherOffset + otherCount; otherIndiceIdx++)
                 {
                     int otherIdx = particleIndices[otherIndiceIdx];
-                    if (idx != otherIdx && !AreImmediatelyConnected(idx, otherIdx))
+                    float distanceSquared = (sim.particles[idx].position - sim.particles[otherIdx].position).LengthSquared;
+                    if (idx != otherIdx && distanceSquared < maxDistanceSquared && !AreImmediatelyConnected(idx, otherIdx))
                     {
-                        near.Add(new NearParticle() { particleIndex = otherIdx, distance =  0 });
-                        
-                        /*
-                        if (shouldConnect(idx, otherIdx, rnd, out var length))
-                        {
-                            if (producedEdges == null)
-                            {
-                                addedEdges[addedEdgesCount].a = (uint)idx;
-                                addedEdges[addedEdgesCount].b = (uint)otherIdx;
-                                addedEdges[addedEdgesCount].restLength = length;
-                                addedEdgesCount++;
-                            }
-                            else
-                            {
-                                producedEdges.Add(new Edge(){ a=(uint)idx, b=(uint)otherIdx, restLength = length});
-                                
-                            }
-
-                            done[idx] = true;
-                            done[otherIdx] = true;
-                            goto ContinueIdx;
-                        }*/
+                        near[nearCount].particleIndex = otherIdx;
+                        near[nearCount].distanceSquared = distanceSquared;
+                        nearCount++;
                     }
                 }
             }
             
-            //ContinueIdx:
-            //continue;
-
-
-            for (int k = 0; k < near.Count; k++)
+            //iterate list of ordered near particles
+            Array.Sort(near, 0, nearCount, comparer);
+            for (int k = 0; k < nearCount; k++)
             {
                 int otherIdx = near[k].particleIndex;
-                if (shouldConnect(idx, otherIdx, rnd, out var length))
+                if (shouldConnect(idx, otherIdx, near[k].distanceSquared, rnd, out var length))
                 {
                     if (producedEdges == null)
                     {
@@ -231,7 +221,6 @@ public abstract class ChemistryBase
 
                     done[idx] = true;
                     done[otherIdx] = true;
-                    //goto ContinueIdx;
                     break;
                 }
             }
@@ -239,6 +228,29 @@ public abstract class ChemistryBase
             
             
         }
+    }
+
+    private int CountParticlesInAdjacentCells(Vector3i main)
+    {
+        int count = 0;
+        int cellCount2 = sim.config.cellCount * sim.config.cellCount;
+        for (int dz = -1; dz <= 1; dz++)
+        for (int dy = -1; dy <= 1; dy++)
+        for (int dx = -1; dx <= 1; dx++)
+        {
+            Vector3i otherCell = main + new Vector3i(dx, dy, dz);
+            if (otherCell.X < 0 || otherCell.X >= sim.config.cellCount ||
+                otherCell.Y < 0 || otherCell.Y >= sim.config.cellCount ||
+                otherCell.Z < 0 || otherCell.Z >= sim.config.cellCount)
+                continue;
+            
+            int otherCellIdx = otherCell.X +
+                               otherCell.Y * sim.config.cellCount +
+                               otherCell.Z * cellCount2;
+            count += cellCounts[otherCellIdx];
+        }
+        
+        return count;
     }
     
     protected bool AreImmediatelyConnected(int idx, int idx2)
@@ -279,11 +291,20 @@ public abstract class ChemistryBase
     }
 }
 
-public delegate bool ShouldConnectDelegate(int idx, int otherIdx, Random rnd, out float length);
+public delegate bool ShouldConnectDelegate(int idx, int otherIdx, float distanceSquared, Random rnd, out float length);
 
 public struct NearParticle
 {
     public int particleIndex;
 
-    public float distance;
+    public float distanceSquared;
+}
+
+class NearParticleComparer : IComparer<NearParticle>
+{
+    public int Compare(NearParticle x, NearParticle y)
+    {
+        return x.distanceSquared < y.distanceSquared ? -1 :
+            x.distanceSquared > y.distanceSquared ? 1 : 0;
+    }
 }

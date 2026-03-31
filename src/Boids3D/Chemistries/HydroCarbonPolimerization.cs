@@ -14,11 +14,8 @@ public class HydroCarbonPolimerization : ChemistryBase, IChemistry
 
     protected override void InternalReact()
     {
-        ConnectToNear((idx, rnd) =>
+        ConnectToNear(15, (idx, rnd) =>
             {
-                //if (sim.rnd.NextDouble() < 0.99)
-                //    return false;
-                
                 if (done[idx])
                     return false;
                 
@@ -31,7 +28,7 @@ public class HydroCarbonPolimerization : ChemistryBase, IChemistry
 
                 return true;
             },
-            (int idx, int otherIdx, Random rnd, out float length) =>
+            (int idx, int otherIdx, float distanceSquared, Random rnd, out float length) =>
             {
                 length = 3;
                 if (done[otherIdx])
@@ -54,10 +51,6 @@ public class HydroCarbonPolimerization : ChemistryBase, IChemistry
                                                        CountImmediateConnections(otherIdx, 0) >= 2))
                     return false;
                 
-                var distance = (p.position - other.position).Length;
-                if (distance * sim.reactionDistance > 15)
-                    return false;
-
                 return true;
             });
 
