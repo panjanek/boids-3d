@@ -298,14 +298,19 @@ void update_one(uint idx)
     //integrate velocity
     vel += acc * config.dt;    
     
+    //damp or accelerate
+    float velMag = length(vel);
+    if (velMag > config.maxSpeed / 5)
+        vel *= 0.99;
+    else
+        vel *= 1.1;
+    
     //clamp speed
-    float stepLen = length(vel);
-    if (stepLen > config.maxSpeed)
-        vel *= config.maxSpeed / stepLen;
+    if (velMag > config.maxSpeed)
+        vel *= config.maxSpeed / velMag;
     
     //integrate position
     pos += vel * config.dt;
-
 
     //prepare updated particle struct
     cube_pos(pos);
