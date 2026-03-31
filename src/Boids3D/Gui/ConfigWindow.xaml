@@ -133,9 +133,13 @@
                     </ToggleButton>
                     <Button Name="backButton" Grid.Row="0" Grid.Column="5">Back</Button>
                 </Grid>
+                
+                <TextBlock Grid.Row="1" Grid.Column="0" Text="Chemistry" Grid.ColumnSpan="1" VerticalAlignment="Center" Margin="10,5,5,0" Foreground="White" TextWrapping="Wrap"/>
+                <ComboBox Name="chemistry" Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" SelectionChanged="global_SelectionChanged" Margin="0,5,10,0">
+                </ComboBox>
 
-                <TextBlock Grid.Row="1" Grid.Column="0" Text="Number of particles" Grid.ColumnSpan="1" VerticalAlignment="Center" Margin="10,5,5,0" Foreground="White" TextWrapping="Wrap"/>
-                <ComboBox Name="particlesCount" Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" SelectionChanged="global_SelectionChanged" Margin="0,5,10,0">
+                <TextBlock Grid.Row="2" Grid.Column="0" Text="Number of particles" Grid.ColumnSpan="1" VerticalAlignment="Center" Margin="10,5,5,0" Foreground="White" TextWrapping="Wrap"/>
+                <ComboBox Name="particlesCount" Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2" SelectionChanged="global_SelectionChanged" Margin="0,5,10,0">
                     <ComboBoxItem>500</ComboBoxItem>
                     <ComboBoxItem>1000</ComboBoxItem>
                     <ComboBoxItem>2500</ComboBoxItem>
@@ -149,8 +153,8 @@
                     <ComboBoxItem>500000</ComboBoxItem>
                     <ComboBoxItem>1000000</ComboBoxItem>
                 </ComboBox>
-                <TextBlock Grid.Row="2" Grid.Column="0" Text="Size of the field" Grid.ColumnSpan="1" VerticalAlignment="Center" Margin="10,5,5,0" Foreground="White" TextWrapping="Wrap"/>
-                <ComboBox Name="fieldSize" Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2" SelectionChanged="global_SelectionChanged" Margin="0,5,10,0">
+                <TextBlock Grid.Row="3" Grid.Column="0" Text="Size of the field" Grid.ColumnSpan="1" VerticalAlignment="Center" Margin="10,5,5,0" Foreground="White" TextWrapping="Wrap"/>
+                <ComboBox Name="fieldSize" Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="2" SelectionChanged="global_SelectionChanged" Margin="0,5,10,0">
                     <ComboBoxItem>300x300x300</ComboBoxItem>
                     <ComboBoxItem>500x500x500</ComboBoxItem>
                     <ComboBoxItem>800x800x800</ComboBoxItem>
@@ -161,8 +165,8 @@
                     <ComboBoxItem>10000x10000x10000</ComboBoxItem>
                 </ComboBox>
                 
-                <TextBlock Grid.Row="3" Grid.Column="0" Text="Reactions" Grid.ColumnSpan="1" VerticalAlignment="Center" Margin="10,5,5,0" Foreground="White" TextWrapping="Wrap"/>
-                <ComboBox Name="reactionFreq" Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="2" SelectionChanged="global_SelectionChanged" Margin="0,5,10,0">
+                <TextBlock Grid.Row="4" Grid.Column="0" Text="Reactions" Grid.ColumnSpan="1" VerticalAlignment="Center" Margin="10,5,5,0" Foreground="White" TextWrapping="Wrap"/>
+                <ComboBox Name="reactionFreq" Grid.Row="4" Grid.Column="1" Grid.ColumnSpan="2" SelectionChanged="global_SelectionChanged" Margin="0,5,10,0">
                     <ComboBoxItem Tag="0">Stopped</ComboBoxItem>
                     <ComboBoxItem Tag="1">Each frame</ComboBoxItem>
                     <ComboBoxItem Tag="10">Each 10nth frame</ComboBoxItem>
@@ -173,12 +177,12 @@
                 </ComboBox>
   
                 <!-- dt -->
-                <TextBlock Grid.Row="4" Grid.Column="0" Text="step dt ⓘ" VerticalAlignment="Center" Margin="10,0,8,0" TextWrapping="Wrap" Foreground="White" ToolTip="Integration step"/>
-                <Slider Grid.Row="4" Grid.Column="1" Grid.ColumnSpan="1" Minimum="0.001" Maximum="0.1" SmallChange="0.001" LargeChange="0.01" ValueChanged="Slider_ValueChanged" Tag="config.dt" VerticalAlignment="Center"/>
-                <TextBlock Grid.Row="4" Grid.Column="2" Tag="config.dt"  FontFamily="Courier New" Margin="0,5,10,0" VerticalAlignment="Center" FontSize="11" MouseDown="infoText_MouseDown" Foreground="White" Background="DarkGray" TextAlignment="Center" Padding="1"/>
+                <TextBlock Grid.Row="5" Grid.Column="0" Text="step dt ⓘ" VerticalAlignment="Center" Margin="10,0,8,0" TextWrapping="Wrap" Foreground="White" ToolTip="Integration step"/>
+                <Slider Grid.Row="5" Grid.Column="1" Grid.ColumnSpan="1" Minimum="0.001" Maximum="0.1" SmallChange="0.001" LargeChange="0.01" ValueChanged="Slider_ValueChanged" Tag="config.dt" VerticalAlignment="Center"/>
+                <TextBlock Grid.Row="5" Grid.Column="2" Tag="config.dt"  FontFamily="Courier New" Margin="0,5,10,0" VerticalAlignment="Center" FontSize="11" MouseDown="infoText_MouseDown" Foreground="White" Background="DarkGray" TextAlignment="Center" Padding="1"/>
 
                 <!-- maxDist -->
-                <TextBlock Grid.Row="7" Grid.Column="0" Text="Max force distance ⓘ" VerticalAlignment="Center" Margin="10,0,8,0" TextWrapping="Wrap" Foreground="White" ToolTip="Maximum dostance between particles for computing forces. Beyond tht the interaction is ignored"/>
+                <TextBlock Grid.Row="7" Grid.Column="0" Text="Max interaction distance ⓘ" VerticalAlignment="Center" Margin="10,0,8,0" TextWrapping="Wrap" Foreground="White" ToolTip="Maximum distance between particles for computing interactions"/>
                 <Slider Grid.Row="7" Grid.Column="1" Grid.ColumnSpan="1" Minimum="1" Maximum="150" SmallChange="0.1" LargeChange="1" ValueChanged="Slider_ValueChanged" Tag="config.maxDist" VerticalAlignment="Center"/>
                 <TextBlock Grid.Row="7" Grid.Column="2" Tag="config.maxDist"  FontFamily="Courier New" Margin="0,5,10,0" VerticalAlignment="Center" FontSize="11" MouseDown="infoText_MouseDown" Foreground="White" Background="DarkGray" TextAlignment="Center" Padding="1"/>
 
@@ -188,11 +192,10 @@
                 <Slider Grid.Row="8" Grid.Column="1" Grid.ColumnSpan="1" Minimum="1" Maximum="300" SmallChange="0.1" LargeChange="1" ValueChanged="Slider_ValueChanged" Tag="config.wallMargin" VerticalAlignment="Center"/>
                 <TextBlock Grid.Row="8" Grid.Column="2" Tag="config.wallMargin"  FontFamily="Courier New" Margin="0,5,10,0" VerticalAlignment="Center" FontSize="11" MouseDown="infoText_MouseDown" Foreground="White" Background="DarkGray" TextAlignment="Center" Padding="1"/>
                 
-                <!-- restLengthMult -->
-                <TextBlock Grid.Row="9" Grid.Column="0" Text="restLengthMult ⓘ" VerticalAlignment="Center" Margin="10,0,8,0" TextWrapping="Wrap" Foreground="White" ToolTip="restLengthMult"/>
-                <Slider Grid.Row="9" Grid.Column="1" Grid.ColumnSpan="1" Minimum="0.1" Maximum="10" SmallChange="0.01" LargeChange="0.1" ValueChanged="Slider_ValueChanged" Tag="config.restLengthMult" VerticalAlignment="Center"/>
-                <TextBlock Grid.Row="9" Grid.Column="2" Tag="config.restLengthMult"  FontFamily="Courier New" Margin="0,5,10,0" VerticalAlignment="Center" FontSize="11" MouseDown="infoText_MouseDown" Foreground="White" Background="DarkGray" TextAlignment="Center" Padding="1"/>
-                
+                <!-- wallForce -->
+                <TextBlock Grid.Row="9" Grid.Column="0" Text="wallForce ⓘ" VerticalAlignment="Center" Margin="10,0,8,0" TextWrapping="Wrap" Foreground="White" ToolTip="wallForce"/>
+                <Slider Grid.Row="9" Grid.Column="1" Grid.ColumnSpan="1" Minimum="0.0" Maximum="200" SmallChange="0.1" LargeChange="2" ValueChanged="Slider_ValueChanged" Tag="config.wallForce" VerticalAlignment="Center"/>
+                <TextBlock Grid.Row="9" Grid.Column="2" Tag="config.wallForce"  FontFamily="Courier New" Margin="0,5,10,0" VerticalAlignment="Center" FontSize="11" MouseDown="infoText_MouseDown" Foreground="White" Background="DarkGray" TextAlignment="Center" Padding="1"/>
                 
                 <!-- repulsionForce -->
                 <TextBlock Grid.Row="10" Grid.Column="0" Text="repulsionForce ⓘ" VerticalAlignment="Center" Margin="10,0,8,0" TextWrapping="Wrap" Foreground="White" ToolTip="repulsionForce"/>
@@ -203,56 +206,47 @@
                 <TextBlock Grid.Row="11" Grid.Column="0" Text="springForce ⓘ" VerticalAlignment="Center" Margin="10,0,8,0" TextWrapping="Wrap" Foreground="White" ToolTip="springForce"/>
                 <Slider Grid.Row="11" Grid.Column="1" Grid.ColumnSpan="1" Minimum="0" Maximum="300" SmallChange="1" LargeChange="10" ValueChanged="Slider_ValueChanged" Tag="config.springForce" VerticalAlignment="Center"/>
                 <TextBlock Grid.Row="11" Grid.Column="2" Tag="config.springForce"  FontFamily="Courier New" Margin="0,5,10,0" VerticalAlignment="Center" FontSize="11" MouseDown="infoText_MouseDown" Foreground="White" Background="DarkGray" TextAlignment="Center" Padding="1"/>
-              
-                
-                
+
                 <!-- flattenForce -->
                 <TextBlock Grid.Row="12" Grid.Column="0" Text="flattenForce ⓘ" VerticalAlignment="Center" Margin="10,0,8,0" TextWrapping="Wrap" Foreground="White" ToolTip="flattenForce"/>
                 <Slider Grid.Row="12" Grid.Column="1" Grid.ColumnSpan="1" Minimum="0" Maximum="300" SmallChange="0.1" LargeChange="1" ValueChanged="Slider_ValueChanged" Tag="config.flattenForce" VerticalAlignment="Center"/>
                 <TextBlock Grid.Row="12" Grid.Column="2" Tag="config.flattenForce"  FontFamily="Courier New" Margin="0,5,10,0" VerticalAlignment="Center" FontSize="11" MouseDown="infoText_MouseDown" Foreground="White" Background="DarkGray" TextAlignment="Center" Padding="1"/>
-                
-                <!-- reactionDistance -->
-                <TextBlock Grid.Row="13" Grid.Column="0" Text="reactionDistance ⓘ" VerticalAlignment="Center" Margin="10,0,8,0" TextWrapping="Wrap" Foreground="White" ToolTip="reactionDistance"/>
-                <Slider Grid.Row="13" Grid.Column="1" Grid.ColumnSpan="1" Minimum="0" Maximum="10" SmallChange="0.01" LargeChange="0.1" ValueChanged="Slider_ValueChanged" Tag="reactionDistance" VerticalAlignment="Center"/>
-                <TextBlock Grid.Row="13" Grid.Column="2" Tag="reactionDistance"  FontFamily="Courier New" Margin="0,5,10,0" VerticalAlignment="Center" FontSize="11" MouseDown="infoText_MouseDown" Foreground="White" Background="DarkGray" TextAlignment="Center" Padding="1"/>
-                 
-                <!-- maxSpeed -->
-                <TextBlock Grid.Row="14" Grid.Column="0" Text="maxSpeed ⓘ" VerticalAlignment="Center" Margin="10,0,8,0" TextWrapping="Wrap" Foreground="White" ToolTip="maxSpeed"/>
-                <Slider Grid.Row="14" Grid.Column="1" Grid.ColumnSpan="1" Minimum="1" Maximum="300" SmallChange="1" LargeChange="2" ValueChanged="Slider_ValueChanged" Tag="config.maxSpeed" VerticalAlignment="Center"/>
-                <TextBlock Grid.Row="14" Grid.Column="2" Tag="config.maxSpeed"  FontFamily="Courier New" Margin="0,5,10,0" VerticalAlignment="Center" FontSize="11" MouseDown="infoText_MouseDown" Foreground="White" Background="DarkGray" TextAlignment="Center" Padding="1"/>
 
+                <!-- maxSpeed -->
+                <TextBlock Grid.Row="13" Grid.Column="0" Text="maxSpeed ⓘ" VerticalAlignment="Center" Margin="10,0,8,0" TextWrapping="Wrap" Foreground="White" ToolTip="maxSpeed"/>
+                <Slider Grid.Row="13" Grid.Column="1" Grid.ColumnSpan="1" Minimum="1" Maximum="300" SmallChange="1" LargeChange="2" ValueChanged="Slider_ValueChanged" Tag="config.maxSpeed" VerticalAlignment="Center"/>
+                <TextBlock Grid.Row="13" Grid.Column="2" Tag="config.maxSpeed"  FontFamily="Courier New" Margin="0,5,10,0" VerticalAlignment="Center" FontSize="11" MouseDown="infoText_MouseDown" Foreground="White" Background="DarkGray" TextAlignment="Center" Padding="1"/>
+
+                <!-- reactionDistance -->
+                <TextBlock Grid.Row="14" Grid.Column="0" Text="reactionDistance ⓘ" VerticalAlignment="Center" Margin="10,0,8,0" TextWrapping="Wrap" Foreground="White" ToolTip="reactionDistance"/>
+                <Slider Grid.Row="14" Grid.Column="1" Grid.ColumnSpan="1" Minimum="0" Maximum="10" SmallChange="0.01" LargeChange="0.1" ValueChanged="Slider_ValueChanged" Tag="reactionDistance" VerticalAlignment="Center"/>
+                <TextBlock Grid.Row="14" Grid.Column="2" Tag="reactionDistance"  FontFamily="Courier New" Margin="0,5,10,0" VerticalAlignment="Center" FontSize="11" MouseDown="infoText_MouseDown" Foreground="White" Background="DarkGray" TextAlignment="Center" Padding="1"/>
 
                 <!-- reactionProbability -->
                 <TextBlock Grid.Row="15" Grid.Column="0" Text="reactionProbability" VerticalAlignment="Center" Margin="10,0,8,0" TextWrapping="Wrap" Foreground="White" ToolTip="reactionProbability"/>
                 <Slider Grid.Row="15" Grid.Column="1" Grid.ColumnSpan="1" Minimum="0" Maximum="1" SmallChange="0.01" LargeChange="0.1" ValueChanged="Slider_ValueChanged" Tag="reactionProbability" VerticalAlignment="Center"/>
                 <TextBlock Grid.Row="15" Grid.Column="2" Tag="reactionProbability"  FontFamily="Courier New" Margin="0,5,10,0" VerticalAlignment="Center" FontSize="11" MouseDown="infoText_MouseDown" Foreground="White" Background="DarkGray" TextAlignment="Center" Padding="1"/>
-     
+                
+                <!-- restLengthMult -->
+                <TextBlock Grid.Row="16" Grid.Column="0" Text="restLengthMult ⓘ" VerticalAlignment="Center" Margin="10,0,8,0" TextWrapping="Wrap" Foreground="White" ToolTip="restLengthMult"/>
+                <Slider Grid.Row="16" Grid.Column="1" Grid.ColumnSpan="1" Minimum="0.1" Maximum="10" SmallChange="0.01" LargeChange="0.1" ValueChanged="Slider_ValueChanged" Tag="config.restLengthMult" VerticalAlignment="Center"/>
+                <TextBlock Grid.Row="16" Grid.Column="2" Tag="config.restLengthMult"  FontFamily="Courier New" Margin="0,5,10,0" VerticalAlignment="Center" FontSize="11" MouseDown="infoText_MouseDown" Foreground="White" Background="DarkGray" TextAlignment="Center" Padding="1"/>
                 
                 <!-- particleSize -->
-                <TextBlock Grid.Row="16" Grid.Column="0" Text="Particle size ⓘ" VerticalAlignment="Center" Margin="10,0,8,0" TextWrapping="Wrap" Foreground="White" ToolTip="Screen size of particle. Does not affect simulation"/>
-                <Slider Grid.Row="16" Grid.Column="1" Grid.ColumnSpan="1" Minimum="0.01" Maximum="10" SmallChange="0.01" LargeChange="0.1" ValueChanged="Slider_ValueChanged" Tag="particleSize" VerticalAlignment="Center"/>
-                <TextBlock Grid.Row="16" Grid.Column="2" Tag="particleSize"  FontFamily="Courier New" Margin="0,5,10,0" VerticalAlignment="Center" FontSize="11" MouseDown="infoText_MouseDown" Foreground="White" Background="DarkGray" TextAlignment="Center" Padding="1"/>
-
-                <!-- forwardMove -->
-                <TextBlock Grid.Row="17" Grid.Column="0" Text="Speed of camera ⓘ" VerticalAlignment="Center" Margin="10,0,8,0" TextWrapping="Wrap" Foreground="White" ToolTip="Speed of camera forward move"/>
-                <Slider Grid.Row="17" Grid.Column="1" Grid.ColumnSpan="1" Minimum="-1" Maximum="1" SmallChange="0.01" LargeChange="0.1" ValueChanged="Slider_ValueChanged" Tag="forwardMove" VerticalAlignment="Center"/>
-                <TextBlock Grid.Row="17" Grid.Column="2" Tag="forwardMove"  FontFamily="Courier New" Margin="0,5,10,0" VerticalAlignment="Center" FontSize="11" MouseDown="infoText_MouseDown" Foreground="White" Background="DarkGray" TextAlignment="Center" Padding="1"/>
+                <TextBlock Grid.Row="17" Grid.Column="0" Text="Particle size ⓘ" VerticalAlignment="Center" Margin="10,0,8,0" TextWrapping="Wrap" Foreground="White" ToolTip="Screen size of particle. Does not affect simulation"/>
+                <Slider Grid.Row="17" Grid.Column="1" Grid.ColumnSpan="1" Minimum="0.01" Maximum="10" SmallChange="0.01" LargeChange="0.1" ValueChanged="Slider_ValueChanged" Tag="particleSize" VerticalAlignment="Center"/>
+                <TextBlock Grid.Row="17" Grid.Column="2" Tag="particleSize"  FontFamily="Courier New" Margin="0,5,10,0" VerticalAlignment="Center" FontSize="11" MouseDown="infoText_MouseDown" Foreground="White" Background="DarkGray" TextAlignment="Center" Padding="1"/>
+                
+                <!-- lineWidth -->
+                <TextBlock Grid.Row="18" Grid.Column="0" Text="lineWidth ⓘ" VerticalAlignment="Center" Margin="10,0,8,0" TextWrapping="Wrap" Foreground="White" ToolTip="lineWidth"/>
+                <Slider Grid.Row="18" Grid.Column="1" Grid.ColumnSpan="1" Minimum="0" Maximum="3000" SmallChange="1" LargeChange="10" ValueChanged="Slider_ValueChanged" Tag="lineWidth" VerticalAlignment="Center"/>
+                <TextBlock Grid.Row="18" Grid.Column="2" Tag="lineWidth"  FontFamily="Courier New" Margin="0,5,10,0" VerticalAlignment="Center" FontSize="11" MouseDown="infoText_MouseDown" Foreground="White" Background="DarkGray" TextAlignment="Center" Padding="1"/>
                 
                 <!-- fogDensity -->
-                <TextBlock Grid.Row="18" Grid.Column="0" Text="Fog density ⓘ" VerticalAlignment="Center" Margin="10,0,8,0" TextWrapping="Wrap" Foreground="White" ToolTip="Visual fog density"/>
-                <Slider Grid.Row="18" Grid.Column="1" Grid.ColumnSpan="1" Minimum="0.0" Maximum="0.005" SmallChange="0.00001" LargeChange="0.0001" ValueChanged="Slider_ValueChanged" Tag="fogDensity" VerticalAlignment="Center"/>
-                <TextBlock Grid.Row="18" Grid.Column="2" Tag="fogDensity"  FontFamily="Courier New" Margin="0,5,10,0" VerticalAlignment="Center" FontSize="11" MouseDown="infoText_MouseDown" Foreground="White" Background="DarkGray" TextAlignment="Center" Padding="1"/>
-                
-                <!-- wallForce -->
-                <TextBlock Grid.Row="19" Grid.Column="0" Text="wallForce ⓘ" VerticalAlignment="Center" Margin="10,0,8,0" TextWrapping="Wrap" Foreground="White" ToolTip="wallForce"/>
-                <Slider Grid.Row="19" Grid.Column="1" Grid.ColumnSpan="1" Minimum="0.0" Maximum="200" SmallChange="0.1" LargeChange="2" ValueChanged="Slider_ValueChanged" Tag="config.wallForce" VerticalAlignment="Center"/>
-                <TextBlock Grid.Row="19" Grid.Column="2" Tag="config.wallForce"  FontFamily="Courier New" Margin="0,5,10,0" VerticalAlignment="Center" FontSize="11" MouseDown="infoText_MouseDown" Foreground="White" Background="DarkGray" TextAlignment="Center" Padding="1"/>
+                <TextBlock Grid.Row="19" Grid.Column="0" Text="Fog density ⓘ" VerticalAlignment="Center" Margin="10,0,8,0" TextWrapping="Wrap" Foreground="White" ToolTip="Visual fog density"/>
+                <Slider Grid.Row="19" Grid.Column="1" Grid.ColumnSpan="1" Minimum="0.0" Maximum="0.005" SmallChange="0.00001" LargeChange="0.0001" ValueChanged="Slider_ValueChanged" Tag="fogDensity" VerticalAlignment="Center"/>
+                <TextBlock Grid.Row="19" Grid.Column="2" Tag="fogDensity"  FontFamily="Courier New" Margin="0,5,10,0" VerticalAlignment="Center" FontSize="11" MouseDown="infoText_MouseDown" Foreground="White" Background="DarkGray" TextAlignment="Center" Padding="1"/>
 
-                <!-- lineWidth -->
-                <TextBlock Grid.Row="20" Grid.Column="0" Text="lineWidth ⓘ" VerticalAlignment="Center" Margin="10,0,8,0" TextWrapping="Wrap" Foreground="White" ToolTip="lineWidth"/>
-                <Slider Grid.Row="20" Grid.Column="1" Grid.ColumnSpan="1" Minimum="0" Maximum="3000" SmallChange="1" LargeChange="10" ValueChanged="Slider_ValueChanged" Tag="lineWidth" VerticalAlignment="Center"/>
-                <TextBlock Grid.Row="20" Grid.Column="2" Tag="lineWidth"  FontFamily="Courier New" Margin="0,5,10,0" VerticalAlignment="Center" FontSize="11" MouseDown="infoText_MouseDown" Foreground="White" Background="DarkGray" TextAlignment="Center" Padding="1"/>
-                
                 <Grid Grid.Row="23" Grid.Column="1" Grid.ColumnSpan="2" Margin="0,5,0,0">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
