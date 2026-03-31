@@ -2,11 +2,12 @@
 
 public static class ParallelHelper
 {
-    public static void ParallelProcess<T>(int numberOfThreads, List<T> data, Action<T> process)
+    public static void ParallelProcess<TContext, TData>(TContext[] threads, List<TData> data, Action<TContext, TData> process)
+     where TContext : IThreadContext
     {
         if (data == null) throw new ArgumentNullException(nameof(data));
         if (process == null) throw new ArgumentNullException(nameof(process));
-        if (numberOfThreads <= 0) throw new ArgumentOutOfRangeException(nameof(numberOfThreads));
+        int numberOfThreads = threads.Length;
 
         int length = data.Count;
         if (length == 0) return;
@@ -26,10 +27,19 @@ public static class ParallelHelper
             int start = threadIndex * chunkSize;
             int end = Math.Min(start + chunkSize, length);
 
+            threads[threadIndex].StartIndex = start;
+            threads[threadIndex].EndIndex = end;
             for (int i = start; i < end; i++)
             {
-                process(data[i]);
+                process(threads[threadIndex], data[i]);
             }
         });
     }
+}
+
+public interface IThreadContext
+{
+    public int StartIndex { get; set; }
+    
+    public int EndIndex { get; set; }
 }

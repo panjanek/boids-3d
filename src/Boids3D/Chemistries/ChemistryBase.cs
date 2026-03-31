@@ -6,6 +6,8 @@ namespace Boids3D.Chemistries;
 
 public abstract class ChemistryBase
 {
+    protected const int ThreadCount = 20;
+    
     protected Simulation sim;
 
     private int[] cellOffsets;
@@ -29,10 +31,15 @@ public abstract class ChemistryBase
     private Edge[] addedEdges;
 
     private int addedEdgesCount;
+    
+    private NearParticlesThreadContext[] nearThreads = new NearParticlesThreadContext[ThreadCount];
     protected void InternalInitialize(double[] proportion, float[] sizes, int[] colors)
     {
         done = new bool[sim.particles.Length];
         addedEdges = new Edge[sim.particles.Length];
+        for (int t = 0; t < nearThreads.Length; t++)
+            nearThreads[t] = new NearParticlesThreadContext();
+        
         
         var propTotal = proportion.Sum();
         proportion = proportion.Select(x => x / propTotal).ToArray();
@@ -89,16 +96,15 @@ public abstract class ChemistryBase
             var locking = new object();
             foreach (var partition in partitions)
             {
-                ParallelHelper.ParallelProcess(20, partition, cellIndex =>
+                foreach(var thread in nearThreads)
+                    thread.AddedEdges.Clear();
+                
+                ParallelHelper.ParallelProcess(nearThreads, partition, (thread, cellIndex) =>
                 {
-                    var rnd = new Random();
-                    var threadAddedEdges = new List<Edge>();
-                    ConnectToNearOneCell(maxDistance, cellIndex, shouldCheck, shouldConnect, rnd, threadAddedEdges);
-                    lock (locking)
-                    {
-                        totalAddedEdges.AddRange(threadAddedEdges);
-                    }
+                    ConnectToNearOneCell(maxDistance, cellIndex, shouldCheck, shouldConnect, thread.Rnd, thread.AddedEdges);
                 });
+                
+                totalAddedEdges.AddRange(nearThreads.SelectMany(t=>t.AddedEdges));
             }
             
             if (totalAddedEdges.Count > 0)
@@ -300,11 +306,21 @@ public struct NearParticle
     public float distanceSquared;
 }
 
-class NearParticleComparer : IComparer<NearParticle>
+public class NearParticleComparer : IComparer<NearParticle>
 {
     public int Compare(NearParticle x, NearParticle y)
     {
         return x.distanceSquared < y.distanceSquared ? -1 :
             x.distanceSquared > y.distanceSquared ? 1 : 0;
     }
+}
+
+public class NearParticlesThreadContext : IThreadContext
+{
+    public int StartIndex { get; set; }
+    public int EndIndex { get; set; }
+
+    public Random Rnd { get; set; } = new Random();
+
+    public List<Edge> AddedEdges { get; set; } = new List<Edge>();
 }
