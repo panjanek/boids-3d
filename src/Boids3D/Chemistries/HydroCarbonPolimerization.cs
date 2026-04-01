@@ -14,7 +14,6 @@ public class HydroCarbonPolimerization : ChemistryBase, IChemistry
 
     protected override void InternalReact()
     {
-        ComputeMolecules();
         ConnectToNear(15, (idx, rnd) =>
             {
                 if (done[idx])

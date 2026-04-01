@@ -2,6 +2,7 @@
 using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO.Pipes;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -68,6 +69,18 @@ namespace Boids3D.Gpu
         private uint[] neighboursCount;
 
         private float[] restLengths;
+        
+        private int[] molecules;
+
+        private int[] moleculesStart;
+
+        private int[] moleculesCount;
+
+        private int[] moleculeParticleIndices;
+
+        protected int moleculesCnt;
+
+        private int[] stack = new int[0];
 
         private Particle trackedParticle;
         
@@ -184,7 +197,9 @@ namespace Boids3D.Gpu
             DownloadIntBuffer(particleIndices, particleIndicesBuffer, currentParticlesCount);
             DownloadParticles(sim.particles);
             stopwatch.Restart();
-            sim.chemistry.React(cellOffsets, cellCounts, particleIndices, neighboursStart, neighboursCount, neighbours);
+            sim.chemistry.React(cellOffsets, cellCounts, particleIndices, 
+                                neighboursStart, neighboursCount, neighbours,
+                                molecules, moleculesStart, moleculesCount, moleculeParticleIndices, moleculesCnt);
             stopwatch.Stop();
             LastReactionTimeMs = stopwatch.Elapsed.TotalMilliseconds;
             UploadEdges(sim.edges);
@@ -205,7 +220,7 @@ namespace Boids3D.Gpu
             GL.BindBuffer(BufferTarget.ShaderStorageBuffer, edgesBuffer);
             GL.BufferSubData(BufferTarget.ShaderStorageBuffer, 0, edges.Length * Marshal.SizeOf<Edge>(), edges);
             
-            ComputeNeighbours(currentParticlesCount, edges);
+            ComputeNeighboursandMolecules(currentParticlesCount, edges);
             GL.BindBuffer(BufferTarget.ShaderStorageBuffer, neighboursBuffer);
             GL.BufferSubData(BufferTarget.ShaderStorageBuffer, 0, neighbours.Length * Marshal.SizeOf<uint>(), neighbours);
             GL.BindBuffer(BufferTarget.ShaderStorageBuffer, neighboursStartBuffer);
@@ -313,8 +328,9 @@ namespace Boids3D.Gpu
             GL.BufferData(BufferTarget.ShaderStorageBuffer, elementCount * elementSize, IntPtr.Zero, BufferUsageHint.DynamicDraw);
         }
         
-        public void ComputeNeighbours(int particlesCount, Edge[] edges)
+        public void ComputeNeighboursandMolecules(int particlesCount, Edge[] edges)
         {
+            //compute immediate connections
             Array.Clear(neighboursCount);
             for(int e=0; e<edges.Length; e++)
             {
@@ -345,6 +361,77 @@ namespace Boids3D.Gpu
                 restLengths[cursor[b]] = restLen;
                 cursor[b]++;
             }
+            
+            // compute molecules
+            if (stack.Length != particlesCount)
+            {
+                stack = new int[particlesCount];
+                molecules = new int[particlesCount];
+                moleculesStart = new int[particlesCount];
+                moleculesCount = new int[particlesCount];
+                moleculeParticleIndices = new int[particlesCount];
+            }
+
+            int moleculeId = 0;
+            int offset = 0;
+            Array.Fill(molecules, -1);
+            Array.Clear(moleculesCount);
+            for (int idx = 0; idx < particlesCount; idx++)
+            {
+                if (molecules[idx] == -1)
+                {
+                    int stackTop = 0;
+                    moleculesStart[moleculeId] = offset;
+                    moleculeParticleIndices[offset] = idx;
+                    offset++;
+                    stack[stackTop] = idx;
+                    molecules[idx] = moleculeId;
+                    moleculesCount[moleculeId] = 1;
+                    while (stackTop >= 0)
+                    {
+                        int p = stack[stackTop];
+                        stackTop--;
+
+                        uint neighStart = neighboursStart[p];
+                        uint neighCount = neighboursCount[p];
+                        for (uint i = 0; i < neighCount; i++)
+                        {
+                            uint neighIdx = neighStart + i;
+                            uint otherIdx = neighbours[neighIdx];
+                            if (molecules[otherIdx] == -1)
+                            {
+                                stackTop++;
+                                stack[stackTop] = (int)otherIdx;
+                                molecules[otherIdx] = moleculeId;
+                                moleculesCount[moleculeId]++;
+                                moleculeParticleIndices[offset] = (int)otherIdx;
+                                offset++;
+                            }
+                        }
+                        
+                    }
+
+                    moleculeId++;
+                }
+            }
+
+            moleculesCnt = moleculeId;
+
+            /*
+            var groupped = molecules.Select((mId, particleIdx) => new {mId, particleIdx}).GroupBy(x => x.mId).ToList().OrderByDescending(x => x.Count()).ToList();
+            foreach (var group in groupped)
+            {
+                var testMoleculeId = group.Key;
+                var testMoleculeSize1 = group.Count();
+                var testMoleculeParticles1 = group.Select(x => x.particleIdx).ToArray();
+                var testMoleculeSize2 = moleculesCount[testMoleculeId];
+                var testMoleculeParticles2 = moleculeParticleIndices.Skip(moleculesStart[testMoleculeId])
+                    .Take(testMoleculeSize2).ToArray();
+                if (testMoleculeSize1 != testMoleculeSize2 ||
+                    testMoleculeParticles1.Intersect(testMoleculeParticles2).Count() != testMoleculeParticles1.Length)
+                    throw new Exception("Something is wrong");
+            }
+            */
         }
     }
 }

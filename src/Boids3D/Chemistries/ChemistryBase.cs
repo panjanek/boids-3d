@@ -38,6 +38,8 @@ public abstract class ChemistryBase
 
     private int[] particleIndices;
 
+    private int[] stack;
+
     private int currentCellCount = -1;
 
     private List<int>[] partitions;
@@ -45,6 +47,7 @@ public abstract class ChemistryBase
     private NearParticlesThreadContext[] nearThreads = new NearParticlesThreadContext[ThreadCount];
     protected void InternalInitialize(double[] proportion, float[] sizes, int[] colors)
     {
+        stack = new int[sim.particles.Length];
         done = new bool[sim.particles.Length];
         addedEdges = new Edge[sim.particles.Length];
         for (int t = 0; t < nearThreads.Length; t++)
@@ -86,7 +89,9 @@ public abstract class ChemistryBase
         }
     }
 
-    public virtual void React(int[] cellOffsets, int[] cellCounts, int[] particleIndices, uint[] neighboursStart, uint[] neighboursCount, uint[] neighbours)
+    public virtual void React(int[] cellOffsets, int[] cellCounts, int[] particleIndices, 
+                              uint[] neighboursStart, uint[] neighboursCount, uint[] neighbours,
+                              int[] molecules, int[] moleculesStart, int[] moleculesCount, int[] moleculeParticleIndices, int moleculesCnt)
     {
         this.cellOffsets = cellOffsets;
         this.cellCounts = cellCounts;
@@ -94,6 +99,11 @@ public abstract class ChemistryBase
         this.neighboursStart = neighboursStart;
         this.neighboursCount = neighboursCount;
         this.neighbours = neighbours;
+        this.molecules = molecules;
+        this.moleculesStart = moleculesStart;
+        this.moleculesCount = moleculesCount;
+        this.moleculeParticleIndices = moleculeParticleIndices;
+        this.moleculesCnt = moleculesCnt;
         Array.Clear(done, 0, done.Length);
         InternalReact();
     }
@@ -133,70 +143,6 @@ public abstract class ChemistryBase
             if (addedEdgesCount > 0)
                 AddEdges(addedEdges, addedEdgesCount);
         }
-    }
-
-    protected void ComputeMolecules()
-    {
-        var stack = new int[sim.particles.Length];
-        
-        int moleculeId = 0;
-        int offset = 0;
-        Array.Fill(molecules, -1);
-        Array.Clear(moleculesCount);
-        Array.Clear(moleculesStart);
-        Array.Clear(moleculeParticleIndices);
-        for (int idx = 0; idx < sim.particles.Length; idx++)
-        {
-            if (molecules[idx] == -1)
-            {
-                int stackTop = 0;
-                moleculesStart[moleculeId] = offset;
-                moleculeParticleIndices[offset] = idx;
-                offset++;
-                stack[stackTop] = idx;
-                molecules[idx] = moleculeId;
-                moleculesCount[moleculeId] = 1;
-                while (stackTop >= 0)
-                {
-                    int p = stack[stackTop];
-                    stackTop--;
-
-                    uint neighStart = neighboursStart[p];
-                    uint neighCount = neighboursCount[p];
-                    for (uint i = 0; i < neighCount; i++)
-                    {
-                        uint neighIdx = neighStart + i;
-                        uint otherIdx = neighbours[neighIdx];
-                        if (molecules[otherIdx] == -1)
-                        {
-                            stackTop++;
-                            stack[stackTop] = (int)otherIdx;
-                            molecules[otherIdx] = moleculeId;
-                            moleculesCount[moleculeId]++;
-                            moleculeParticleIndices[offset] = (int)otherIdx;
-                            offset++;
-                        }
-                    }
-                    
-                }
-
-                moleculeId++;
-            }
-        }
-
-        moleculesCnt = moleculeId;
-
-        
-        var groupped = molecules.Select((mId, particleIdx) => new {mId, particleIdx}).GroupBy(x => x.mId).ToList().OrderByDescending(x => x.Count()).ToList();
-        var biggestMoleculeId = groupped.First().Key;
-        var biggestMoleculeSize1 = groupped.First().Count();
-        var biggesMoleculeParticles1 = groupped.First().Select(x=>x.particleIdx).ToArray();
-        var biggestMoleculeSize2 = moleculesCount[biggestMoleculeId];
-        var biggesMoleculeParticles2 = moleculeParticleIndices.Skip(moleculesStart[biggestMoleculeId]).Take(biggestMoleculeSize2).ToArray();
-        if (biggestMoleculeSize1 != biggestMoleculeSize2 ||
-            biggesMoleculeParticles1.Intersect(biggesMoleculeParticles2).Count() != biggesMoleculeParticles1.Length)
-            throw new Exception("Something is wrong");
-
     }
     
     protected bool AreImmediatelyConnected(int idx, int idx2)
