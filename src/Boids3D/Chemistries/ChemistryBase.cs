@@ -9,7 +9,29 @@ public abstract class ChemistryBase
     protected const int ThreadCount = 20;
     
     protected Simulation sim;
+    
+    protected uint[] neighboursStart;
 
+    protected uint[] neighboursCount;
+
+    protected uint[] neighbours;
+    
+    protected bool[] done;
+
+    protected int[] molecules;
+
+    protected int[] moleculesStart;
+
+    protected int[] moleculesCount;
+
+    protected int[] moleculeParticleIndices;
+
+    protected int moleculesCnt;
+    
+    private Edge[] addedEdges;
+
+    private int addedEdgesCount;
+    
     private int[] cellOffsets;
 
     private int[] cellCounts;
@@ -19,18 +41,6 @@ public abstract class ChemistryBase
     private int currentCellCount = -1;
 
     private List<int>[] partitions;
-
-    protected uint[] neighboursStart;
-
-    protected uint[] neighboursCount;
-
-    protected uint[] neighbours;
-    
-    protected bool[] done;
-
-    private Edge[] addedEdges;
-
-    private int addedEdgesCount;
     
     private NearParticlesThreadContext[] nearThreads = new NearParticlesThreadContext[ThreadCount];
     protected void InternalInitialize(double[] proportion, float[] sizes, int[] colors)
@@ -39,7 +49,11 @@ public abstract class ChemistryBase
         addedEdges = new Edge[sim.particles.Length];
         for (int t = 0; t < nearThreads.Length; t++)
             nearThreads[t] = new NearParticlesThreadContext();
-        
+
+        molecules = new int[sim.particles.Length];
+        moleculesStart = new int[sim.particles.Length];
+        moleculesCount = new int[sim.particles.Length];
+        moleculeParticleIndices = new int[sim.particles.Length];
         
         var propTotal = proportion.Sum();
         proportion = proportion.Select(x => x / propTotal).ToArray();
@@ -119,6 +133,107 @@ public abstract class ChemistryBase
             if (addedEdgesCount > 0)
                 AddEdges(addedEdges, addedEdgesCount);
         }
+    }
+
+    protected void ComputeMolecules()
+    {
+        var stack = new int[sim.particles.Length];
+        
+        int moleculeId = 0;
+        int offset = 0;
+        Array.Fill(molecules, -1);
+        Array.Clear(moleculesCount);
+        Array.Clear(moleculesStart);
+        Array.Clear(moleculeParticleIndices);
+        for (int idx = 0; idx < sim.particles.Length; idx++)
+        {
+            if (molecules[idx] == -1)
+            {
+                int stackTop = 0;
+                moleculesStart[moleculeId] = offset;
+                moleculeParticleIndices[offset] = idx;
+                offset++;
+                stack[stackTop] = idx;
+                molecules[idx] = moleculeId;
+                moleculesCount[moleculeId] = 1;
+                while (stackTop >= 0)
+                {
+                    int p = stack[stackTop];
+                    stackTop--;
+
+                    uint neighStart = neighboursStart[p];
+                    uint neighCount = neighboursCount[p];
+                    for (uint i = 0; i < neighCount; i++)
+                    {
+                        uint neighIdx = neighStart + i;
+                        uint otherIdx = neighbours[neighIdx];
+                        if (molecules[otherIdx] == -1)
+                        {
+                            stackTop++;
+                            stack[stackTop] = (int)otherIdx;
+                            molecules[otherIdx] = moleculeId;
+                            moleculesCount[moleculeId]++;
+                            moleculeParticleIndices[offset] = (int)otherIdx;
+                            offset++;
+                        }
+                    }
+                    
+                }
+
+                moleculeId++;
+            }
+        }
+
+        moleculesCnt = moleculeId;
+
+        
+        var groupped = molecules.Select((mId, particleIdx) => new {mId, particleIdx}).GroupBy(x => x.mId).ToList().OrderByDescending(x => x.Count()).ToList();
+        var biggestMoleculeId = groupped.First().Key;
+        var biggestMoleculeSize1 = groupped.First().Count();
+        var biggesMoleculeParticles1 = groupped.First().Select(x=>x.particleIdx).ToArray();
+        var biggestMoleculeSize2 = moleculesCount[biggestMoleculeId];
+        var biggesMoleculeParticles2 = moleculeParticleIndices.Skip(moleculesStart[biggestMoleculeId]).Take(biggestMoleculeSize2).ToArray();
+        if (biggestMoleculeSize1 != biggestMoleculeSize2 ||
+            biggesMoleculeParticles1.Intersect(biggesMoleculeParticles2).Count() != biggesMoleculeParticles1.Length)
+            throw new Exception("Something is wrong");
+
+    }
+    
+    protected bool AreImmediatelyConnected(int idx, int idx2)
+    {
+        uint neighCount = neighboursCount[idx];
+        if (neighCount == 0)
+            return false;
+        
+        uint neighStart = neighboursStart[idx];
+        for (uint i = 0; i < neighCount; i++)
+        {
+            uint neighIdx = neighStart + i;
+            uint otherIdx = neighbours[neighIdx];
+            if (otherIdx == idx2)
+                return true;
+        }
+
+        return false;
+    }
+    
+    protected int CountImmediateConnections(int idx, int type)
+    {
+        uint neighCount = neighboursCount[idx];
+        if (neighCount == 0)
+            return 0;
+        
+        int count = 0;
+        uint neighStart = neighboursStart[idx];
+        for (uint i = 0; i < neighCount; i++)
+        {
+            uint neighIdx = neighStart + i;
+            uint otherIdx = neighbours[neighIdx];
+            if (sim.particles[otherIdx].type == type)
+                count++;
+        }
+
+        return count;
     }
 
     private void CreatePartitions()
@@ -259,43 +374,6 @@ public abstract class ChemistryBase
             count += cellCounts[otherCellIdx];
         }
         
-        return count;
-    }
-    
-    protected bool AreImmediatelyConnected(int idx, int idx2)
-    {
-        uint neighCount = neighboursCount[idx];
-        if (neighCount == 0)
-            return false;
-        
-        uint neighStart = neighboursStart[idx];
-        for (uint i = 0; i < neighCount; i++)
-        {
-            uint neighIdx = neighStart + i;
-            uint otherIdx = neighbours[neighIdx];
-            if (otherIdx == idx2)
-                return true;
-        }
-
-        return false;
-    }
-    
-    protected int CountImmediateConnections(int idx, int type)
-    {
-        uint neighCount = neighboursCount[idx];
-        if (neighCount == 0)
-            return 0;
-        
-        int count = 0;
-        uint neighStart = neighboursStart[idx];
-        for (uint i = 0; i < neighCount; i++)
-        {
-            uint neighIdx = neighStart + i;
-            uint otherIdx = neighbours[neighIdx];
-            if (sim.particles[otherIdx].type == type)
-                count++;
-        }
-
         return count;
     }
 }

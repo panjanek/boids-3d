@@ -14,6 +14,7 @@ public class HydroCarbonPolimerization : ChemistryBase, IChemistry
 
     protected override void InternalReact()
     {
+        ComputeMolecules();
         ConnectToNear(15, (idx, rnd) =>
             {
                 if (done[idx])
@@ -32,6 +33,9 @@ public class HydroCarbonPolimerization : ChemistryBase, IChemistry
             {
                 length = 3;
                 if (done[otherIdx])
+                    return false;
+                
+                if (molecules[idx] == molecules[otherIdx])
                     return false;
 
                 var p = sim.particles[idx];
