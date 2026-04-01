@@ -24,6 +24,8 @@ namespace Boids3D.Models
         public float fogDensity = 0.0002f;
 
         public float forwardMove = 0.0f;
+        
+        public float rotationSpeed = 0.001f;
 
         public float lineWidth = 300f;
         
@@ -31,7 +33,7 @@ namespace Boids3D.Models
 
         public float reactionProbability = 0.5f;
 
-        public float unhighlightAlpha = 0.5f;
+        public float unhighlightAlpha = 0.3f;
 
         public int reactionsFrequency = 100;
 

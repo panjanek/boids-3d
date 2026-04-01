@@ -246,7 +246,7 @@ namespace Boids3D.Gpu
             app.simulation.followDistance = 0.99f * app.simulation.followDistance + 0.01f * targetDistance;
             if (TrackedIdx.HasValue)
             {
-                xzAngle -= 0.001;
+                xzAngle += app.simulation.rotationSpeed;
 
                 var tracked = solverProgram.GetTrackedParticle();
                 var cameraPosition = tracked.position - GetCameraDirection() * app.simulation.followDistance; //move camera to back of tracked particle
@@ -254,8 +254,9 @@ namespace Boids3D.Gpu
                 var translate = delta;
                 var newCenter = center + translate;
                 //center = newCenter;
-                //center = 0.95f * center + 0.05f * newCenter;
-                center = 0.95f * center + 0.05f * cameraPosition;
+                center = 0.95f * center + 0.05f * newCenter;
+                //center = 0.95f * center + 0.05f * cameraPosition;
+                //center = newCenter;
             }
             else
             {

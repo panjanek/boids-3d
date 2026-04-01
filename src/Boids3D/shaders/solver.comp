@@ -321,12 +321,15 @@ void update_one(uint idx)
     p.position = pos;
     p.velocity = vel;
     p.flags = 0;
-    if ( (config.trackedIdx > -1 && config.trackedIdx == idx) || 
-         (config.trackedMoleculeIdx > -1 && molecules[idx] == config.trackedMoleculeIdx) )
+    if (config.trackedIdx > -1 && config.trackedIdx == idx)
     {
         p.flags = 1;
         tracked = p;
     }
+    
+    if (config.trackedMoleculeIdx > -1 && molecules[idx] == config.trackedMoleculeIdx)
+        p.flags = 1;
+   
 
     outParticles[idx] = p;
 }
