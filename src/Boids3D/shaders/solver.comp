@@ -91,6 +91,9 @@ layout(std430, binding = 8) buffer ParticleIndices {
     uint particleIndices[];
 };
 
+layout(std430, binding = 9) buffer Molecules {
+    int molecules[];
+};
 
 layout(std430, binding = 10) buffer Neighbors {
     uint neighbours[];
@@ -318,7 +321,8 @@ void update_one(uint idx)
     p.position = pos;
     p.velocity = vel;
     p.flags = 0;
-    if (config.trackedIdx > -1 && config.trackedIdx == idx)
+    if ( (config.trackedIdx > -1 && config.trackedIdx == idx) || 
+         (config.trackedMoleculeIdx > -1 && molecules[idx] == config.trackedMoleculeIdx) )
     {
         p.flags = 1;
         tracked = p;

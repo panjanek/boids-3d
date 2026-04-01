@@ -247,6 +247,12 @@
                 <Slider Grid.Row="19" Grid.Column="1" Grid.ColumnSpan="1" Minimum="0.0" Maximum="0.005" SmallChange="0.00001" LargeChange="0.0001" ValueChanged="Slider_ValueChanged" Tag="fogDensity" VerticalAlignment="Center"/>
                 <TextBlock Grid.Row="19" Grid.Column="2" Tag="fogDensity"  FontFamily="Courier New" Margin="0,5,10,0" VerticalAlignment="Center" FontSize="11" MouseDown="infoText_MouseDown" Foreground="White" Background="DarkGray" TextAlignment="Center" Padding="1"/>
 
+                <!-- unhighlightAlpha -->
+                <TextBlock Grid.Row="20" Grid.Column="0" Text="unhighlightAlpha ⓘ" VerticalAlignment="Center" Margin="10,0,8,0" TextWrapping="Wrap" Foreground="White" ToolTip="unhighlightAlpha"/>
+                <Slider Grid.Row="20" Grid.Column="1" Grid.ColumnSpan="1" Minimum="0.0" Maximum="1" SmallChange="0.01" LargeChange="0.1" ValueChanged="Slider_ValueChanged" Tag="unhighlightAlpha" VerticalAlignment="Center"/>
+                <TextBlock Grid.Row="20" Grid.Column="2" Tag="unhighlightAlpha"  FontFamily="Courier New" Margin="0,5,10,0" VerticalAlignment="Center" FontSize="11" MouseDown="infoText_MouseDown" Foreground="White" Background="DarkGray" TextAlignment="Center" Padding="1"/>
+
+                
                 <Grid Grid.Row="23" Grid.Column="1" Grid.ColumnSpan="2" Margin="0,5,0,0">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>

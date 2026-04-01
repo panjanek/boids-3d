@@ -39,6 +39,8 @@ namespace Boids3D.Gpu
         private int cellOffsetBuffer2;
 
         private int particleIndicesBuffer;
+
+        private int moleculesBuffer;
         
         public int neighboursBuffer;
 
@@ -180,6 +182,7 @@ namespace Boids3D.Gpu
             GL.BindBufferBase(BufferRangeTarget.ShaderStorageBuffer, 6, cellCountBuffer);
             GL.BindBufferBase(BufferRangeTarget.ShaderStorageBuffer, 7, cellOffsetBuffer2);
             GL.BindBufferBase(BufferRangeTarget.ShaderStorageBuffer, 8, particleIndicesBuffer);
+            GL.BindBufferBase(BufferRangeTarget.ShaderStorageBuffer, 9, moleculesBuffer);
             GL.BindBufferBase(BufferRangeTarget.ShaderStorageBuffer, 10, neighboursBuffer);
             GL.BindBufferBase(BufferRangeTarget.ShaderStorageBuffer, 11, neighboursStartBuffer);
             GL.BindBufferBase(BufferRangeTarget.ShaderStorageBuffer, 12, neighboursCountBuffer);
@@ -230,6 +233,8 @@ namespace Boids3D.Gpu
             GL.BufferSubData(BufferTarget.ShaderStorageBuffer, 0, neighboursCount.Length * Marshal.SizeOf<uint>(), neighboursCount);
             GL.BindBuffer(BufferTarget.ShaderStorageBuffer, restLengthsBuffer);
             GL.BufferSubData(BufferTarget.ShaderStorageBuffer, 0, restLengths.Length * Marshal.SizeOf<float>(), restLengths);
+            GL.BindBuffer(BufferTarget.ShaderStorageBuffer, moleculesBuffer);
+            GL.BufferSubData(BufferTarget.ShaderStorageBuffer, 0, molecules.Length * Marshal.SizeOf<int>(), molecules);
         }
 
         public void DownloadParticles(Particle[] particles, bool bufferB = false)
@@ -291,6 +296,7 @@ namespace Boids3D.Gpu
                 CreateBuffer(ref particleIndicesBuffer, currentParticlesCount, Marshal.SizeOf<int>());
                 CreateBuffer(ref neighboursStartBuffer, currentParticlesCount, Marshal.SizeOf<int>());
                 CreateBuffer(ref neighboursCountBuffer, currentParticlesCount, Marshal.SizeOf<int>());
+                CreateBuffer(ref moleculesBuffer, currentParticlesCount, Marshal.SizeOf<int>());
                 neighboursStart = new uint[particlesCount];
                 neighboursCount = new uint[particlesCount];
                 particleIndices = new int[particlesCount];
