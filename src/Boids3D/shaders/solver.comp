@@ -300,12 +300,13 @@ void update_one(uint idx)
     
     //damp or accelerate
     float velMag = length(vel);
-    if (velMag > config.maxSpeed / 5)
+    if (velMag > config.maxSpeed / 3)
         vel *= 0.99;
     else
-        vel *= 1.1;
+        vel *= 1.05;
     
     //clamp speed
+    velMag = length(vel);
     if (velMag > config.maxSpeed)
         vel *= config.maxSpeed / velMag;
     

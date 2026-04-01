@@ -13,6 +13,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
+using Boids3D.Chemistries;
 using Boids3D.Models;
 using Boids3D.Utils;
 using Microsoft.WindowsAPICodePack.Dialogs;
@@ -98,6 +99,10 @@ namespace Boids3D.Gui
                 app.simulation.reactionsFrequency = WpfUtil.GetTagAsInt(reactionFreq.SelectedItem);
 
             };
+            
+            chemistry.Items.Add(new ComboBoxItem() { Content = "Simple polymerization", Tag = new Func<IChemistry>(() => new SimplePolimerization()) });
+            chemistry.Items.Add(new ComboBoxItem() { Content = "Simple hydrocarbons", Tag = new Func<IChemistry>(() => new HydroCarbonPolimerization()) });
+            chemistry.SelectedIndex = 1;
 
             KeyDown += (s, e) => app.mainWindow.MainWindow_KeyDown(s, e);
         }
@@ -126,18 +131,22 @@ namespace Boids3D.Gui
 
         private void global_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (fieldSize != null && particlesCount != null && !updating)
+            if (fieldSize != null && particlesCount != null && !updating && chemistry.Items.Count > 0)
             {
                 var newParticleCountStr = WpfUtil.GetComboSelectionAsString(particlesCount);
                 var newSizeStr = WpfUtil.GetComboSelectionAsString(fieldSize);
+                var chemistryFunc = ((ComboBoxItem)chemistry.SelectedItem).Tag as Func<IChemistry>;
+                var newChemistry =  chemistryFunc();
                 if (!string.IsNullOrWhiteSpace(newParticleCountStr) && !string.IsNullOrWhiteSpace(newSizeStr))
                 {
                     var newParticleCount = int.Parse(newParticleCountStr);
                     var sizeSplit = newSizeStr.Split('x');
                     var newSize = int.Parse(sizeSplit[0]);
                     if (newParticleCount != app.simulation.config.particleCount ||
-                        newSize != app.simulation.config.fieldSize)
+                        newSize != app.simulation.config.fieldSize ||
+                        newChemistry.GetType() != app.simulation.chemistry.GetType())
                     {
+                        app.simulation.chemistry = newChemistry;
                         app.simulation.StartSimulation(newParticleCount, newSize);
                         app.renderer.UploadParticleData();
                         UpdateActiveControls();

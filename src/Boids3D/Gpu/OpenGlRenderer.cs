@@ -339,7 +339,7 @@ namespace Boids3D.Gpu
             }
 
             var recDir = app.configWindow.recordDir?.ToString();
-            if (string.IsNullOrWhiteSpace(recDir))
+            if (false && string.IsNullOrWhiteSpace(recDir))
             {
                 glControl.Invalidate();
             }
