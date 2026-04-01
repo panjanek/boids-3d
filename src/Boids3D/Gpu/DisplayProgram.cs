@@ -18,7 +18,7 @@ namespace Boids3D.Gpu
 {
     public class DisplayProgram
     {
-        private int nodesProgram;
+        private int particlesProgram;
 
         private int projNodesLocation;
 
@@ -36,7 +36,7 @@ namespace Boids3D.Gpu
 
         private int fogDensityNodesLocation;
 
-        private int unhighlightedNodesAlphaLocation;
+        private int unhighlightedParticleAlphaLocation;
 
         private int fogDensityEdgeLocation;
 
@@ -59,18 +59,20 @@ namespace Boids3D.Gpu
 
         public DisplayProgram()
         {
-            nodesProgram = ShaderUtil.CompileAndLinkRenderShader("nodes.vert", "nodes.frag");
+            particlesProgram = ShaderUtil.CompileAndLinkRenderShader("nodes.vert", "nodes.frag");
 
-            projNodesLocation = GL.GetUniformLocation(nodesProgram, "projection");
+            projNodesLocation = GL.GetUniformLocation(particlesProgram, "projection");
             if (projNodesLocation == -1) throw new Exception("Uniform 'projection' not found. Shader optimized it out?");
-            particleSizeLocation = GL.GetUniformLocation(nodesProgram, "paricleSize");
+            particleSizeLocation = GL.GetUniformLocation(particlesProgram, "paricleSize");
             if (particleSizeLocation == -1) throw new Exception("Uniform 'paricleSize' not found. Shader optimized it out?");
-            viewportSizeNodesLocation = GL.GetUniformLocation(nodesProgram, "viewportSize");
+            viewportSizeNodesLocation = GL.GetUniformLocation(particlesProgram, "viewportSize");
             if (viewportSizeNodesLocation == -1) throw new Exception("Uniform 'viewportSize' not found. Shader optimized it out?");
-            viewNodesLocation = GL.GetUniformLocation(nodesProgram, "view");
+            viewNodesLocation = GL.GetUniformLocation(particlesProgram, "view");
             if (viewNodesLocation == -1) throw new Exception("Uniform 'view' not found. Shader optimized it out?");
-            fogDensityNodesLocation = GL.GetUniformLocation(nodesProgram, "fogDensity");
+            fogDensityNodesLocation = GL.GetUniformLocation(particlesProgram, "fogDensity");
             if (fogDensityNodesLocation == -1) throw new Exception("Uniform 'fogDensity' not found. Shader optimized it out?");
+            unhighlightedParticleAlphaLocation = GL.GetUniformLocation(particlesProgram, "unhighlightedAlpha");
+            if (unhighlightedParticleAlphaLocation == -1) throw new Exception("Uniform 'unhighlightedAlpha' not found. Shader optimized it out?");
 
             edgesProgram = ShaderUtil.CompileAndLinkRenderShader("edges.vert", "edges.frag");
             projEdgesLocation = GL.GetUniformLocation(edgesProgram, "projection");
@@ -127,7 +129,7 @@ namespace Boids3D.Gpu
             );
         }
 
-        public void Run(int nodesBuffer,
+        public void Run(int particlesBuffer,
                         int edgesBuffer,
                         Matrix4 projectionMatrix,
                         Vector2 viewportSize,
@@ -139,15 +141,16 @@ namespace Boids3D.Gpu
                 ClearBufferMask.DepthBufferBit
             );
             
-            //nodes as points
-            GL.UseProgram(nodesProgram);
-            GL.BindBufferBase(BufferRangeTarget.ShaderStorageBuffer, 2, nodesBuffer);
+            //particles as points
+            GL.UseProgram(particlesProgram);
+            GL.BindBufferBase(BufferRangeTarget.ShaderStorageBuffer, 2, particlesBuffer);
             GL.BindVertexArray(quadVao);
             GL.UniformMatrix4(projNodesLocation, false, ref projectionMatrix);
             GL.Uniform1(particleSizeLocation, sim.particleSize);
             GL.Uniform2(viewportSizeNodesLocation, viewportSize);
             GL.UniformMatrix4(viewNodesLocation, false, ref view);
             GL.Uniform1(fogDensityNodesLocation, sim.fogDensity);
+            GL.Uniform1(unhighlightedParticleAlphaLocation, sim.config.trackedIdx == -1 ? 1.0f : sim.unhighlightAlpha);
 
             GL.DrawElementsInstanced(
                 PrimitiveType.Triangles,
@@ -158,7 +161,6 @@ namespace Boids3D.Gpu
             );
 
             // edges as quads (x6)
-            
             GL.UseProgram(edgesProgram);
             GL.Enable(EnableCap.Blend);
             GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
@@ -171,7 +173,7 @@ namespace Boids3D.Gpu
             GL.Disable(EnableCap.AlphaTest);
             GL.Enable(EnableCap.SampleAlphaToCoverage);
 
-            GL.BindBufferBase(BufferRangeTarget.ShaderStorageBuffer, 2, nodesBuffer);
+            GL.BindBufferBase(BufferRangeTarget.ShaderStorageBuffer, 2, particlesBuffer);
             GL.BindBufferBase(BufferRangeTarget.ShaderStorageBuffer, 3, edgesBuffer);
             var projection = view * projectionMatrix;
             GL.UniformMatrix4(projEdgesLocation, false, ref projection);
@@ -179,6 +181,7 @@ namespace Boids3D.Gpu
             GL.Uniform2(viewportSizeEdgesLocation, ref viewportSize);
             GL.Uniform1(lineWidthLocation, sim.lineWidth);
             GL.Uniform1(fogDensityEdgeLocation, sim.fogDensity);
+            GL.Uniform1(unhighlightedEdgeAlphaLocation, sim.config.trackedIdx == -1 ? 1.0f : sim.unhighlightAlpha);
             GL.DrawArrays(PrimitiveType.Triangles, 0, sim.edges.Length * 6);
 
 

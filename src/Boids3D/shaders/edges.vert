@@ -1,6 +1,6 @@
 ﻿#version 430 core
 
-struct Node
+struct Particle
 {
    vec4 position;
    vec4 velocity;
@@ -24,8 +24,8 @@ struct Edge
     int flags;
 };
 
-layout(std430, binding = 2) buffer NodesBuffer {
-    Node nodes[];
+layout(std430, binding = 2) buffer ParticlesBuffer {
+    Particle particles[];
 };
 
 layout(std430, binding = 3) buffer EdgesBuffer {
@@ -67,22 +67,16 @@ void main()
 
     Edge e = edges[edgeIndex];
 
+    Particle particle1 = particles[e.a];
+    Particle particle2 = particles[e.b];
+    vec3 p0 = particle1.position.xyz;
+    vec3 p1 = particle2.position.xyz;
+    
     vColor = colors[e.color % 8];
     vWidthMult = 1.0;
     vFadingAlpha = 1.0;
-    if (e.flags == 4) //un-highlighted
-    {
-        vWidthMult = 0.75;
+    if (particle1.flags == 0 && particle2.flags == 0)
         vFadingAlpha = unhighlightedAlpha;
-    }
-    else if (e.flags == 3)
-    {
-        vWidthMult = 2;
-        vColor = vec3(1,1,1); 
-    }   
-
-    vec3 p0 = nodes[e.a].position.xyz;
-    vec3 p1 = nodes[e.b].position.xyz;
 
     //--- vDepth
     vec4 v0 = view * vec4(p0, 1.0);

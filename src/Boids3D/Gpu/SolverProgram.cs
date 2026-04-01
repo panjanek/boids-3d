@@ -125,6 +125,7 @@ namespace Boids3D.Gpu
             sim.config.cellCount = (int)Math.Floor(sim.config.fieldSize / sim.config.maxDist);
             sim.config.cellSize = sim.config.fieldSize / sim.config.cellCount;
             sim.config.totalCellCount = sim.config.cellCount * sim.config.cellCount * sim.config.cellCount;
+            sim.config.trackedMoleculeIdx = sim.config.trackedIdx == -1 ? -1 : molecules[sim.config.trackedIdx];
             PrepareBuffers(sim.config.particleCount, sim.config.totalCellCount, sim.edges.Length);
 
             //upload config

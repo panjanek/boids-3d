@@ -24,7 +24,7 @@ struct ShaderConfig {
     float flattenForce;
     float cohesionForce;
     float maxSpeed;
-    float separationRadius2;
+    int trackedMoleculeIdx;
     float alignRadius2;
     float cohesionRadius2;
     float fov;

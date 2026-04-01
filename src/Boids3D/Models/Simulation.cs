@@ -31,6 +31,8 @@ namespace Boids3D.Models
 
         public float reactionProbability = 0.5f;
 
+        public float unhighlightAlpha = 0.5f;
+
         public int reactionsFrequency = 100;
 
         [JsonIgnore]

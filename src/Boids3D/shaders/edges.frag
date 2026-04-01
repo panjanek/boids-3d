@@ -48,8 +48,8 @@ void main()
     float fog = exp(-fogDensity * vDepth);
     fog = clamp(fog, 0.0, 1.0);
 
-    float alpha = alphaEdge * fog * vFadingAlpha;
-    FragColor = vec4(vColor * fog, alpha);
+    float alpha = alphaEdge * fog * 1;
+    FragColor = vec4(vColor * fog * vFadingAlpha, alpha);
 
     //FragColor = vec4(1 - d / (lineWidth * vWidthMult), 0.0, 0.0, 1.0);
 }

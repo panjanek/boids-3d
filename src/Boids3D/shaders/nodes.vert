@@ -1,6 +1,6 @@
 ﻿#version 430
 
-struct Node
+struct Particle
 {
    vec4 position;
    vec4 velocity;
@@ -15,8 +15,8 @@ struct Node
    vec4 direction;
 };
 
-layout(std430, binding = 2) buffer NodesBuffer {
-    Node points[];
+layout(std430, binding = 2) buffer ParticlesBuffer {
+    Particle points[];
 };
 
 uniform mat4 view;
@@ -38,7 +38,7 @@ void main()
 {
     float sphereRadius = 2 * paricleSize + (viewportSize.x/1920);
     uint id = gl_InstanceID;
-    Node p = points[id];
+    Particle p = points[id];
     vSphereRadiusMult = p.size;
 
     //coloring
@@ -55,6 +55,9 @@ void main()
     int colorIdx = p.color;
     vColor = colorIdx >= 0 ? colors[colorIdx % 8] : vec3(1.0, 0.0, 0.0);
     vFadingAlpha = 1.0;
+    
+    if (p.flags == 0)
+        vFadingAlpha = unhighlightedAlpha;
 
     sphereRadius *= vSphereRadiusMult;
 

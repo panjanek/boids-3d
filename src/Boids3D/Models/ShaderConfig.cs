@@ -53,7 +53,8 @@ namespace Boids3D.Models
 
         [FieldOffset(72)] public float maxSpeed = 50f; 
 
-        [FieldOffset(76)] public float separationRadius2;
+        [FieldOffset(76)] public int trackedMoleculeIdx = -1;
+        
         [FieldOffset(80)] public float alignRadius2;
         [FieldOffset(84)] public float cohesionRadius2;
         [FieldOffset(88)] public float fov = -0.707f;
