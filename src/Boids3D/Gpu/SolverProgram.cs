@@ -127,7 +127,6 @@ namespace Boids3D.Gpu
             sim.config.cellCount = (int)Math.Floor(sim.config.fieldSize / sim.config.maxDist);
             sim.config.cellSize = sim.config.fieldSize / sim.config.cellCount;
             sim.config.totalCellCount = sim.config.cellCount * sim.config.cellCount * sim.config.cellCount;
-            sim.config.trackedMoleculeIdx = sim.config.trackedIdx == -1 ? -1 : molecules[sim.config.trackedIdx];
             PrepareBuffers(sim.config.particleCount, sim.config.totalCellCount, sim.edges.Length);
 
             //upload config
@@ -169,11 +168,14 @@ namespace Boids3D.Gpu
             // ------------------------- reactions --------------------------
             stepCount++;
             if (sim.reactionsFrequency > 0 && stepCount % sim.reactionsFrequency == 0)
+            {
                 Reaction(sim);
-            
-            // ------------------------ run solver --------------------------
+                sim.config.trackedMoleculeIdx = sim.config.trackedIdx == -1 ? -1 : molecules[sim.config.trackedIdx];
+                GL.BindBuffer(BufferTarget.UniformBuffer, uboConfig);
+                GL.BufferData(BufferTarget.UniformBuffer, Marshal.SizeOf<ShaderConfig>(), ref sim.config, BufferUsageHint.StaticDraw);
+            }
 
-            //bind ubo and buffers
+            // ------------------------ run solver --------------------------
             GL.BindBufferBase(BufferRangeTarget.UniformBuffer, 0, uboConfig);
             GL.BindBufferBase(BufferRangeTarget.ShaderStorageBuffer, 1, pointsBufferA);
             GL.BindBufferBase(BufferRangeTarget.ShaderStorageBuffer, 2, pointsBufferB);
