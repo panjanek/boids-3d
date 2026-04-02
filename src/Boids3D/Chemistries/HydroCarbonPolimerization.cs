@@ -16,9 +16,6 @@ public class HydroCarbonPolimerization : ChemistryBase, IChemistry
     {
         ConnectToNear(15, (idx, rnd) =>
             {
-                if (done[idx])
-                    return false;
-                
                 var p = sim.particles[idx];
                 if (p.type == 1 && neighboursCount[idx] >= 1) //hydrogen: only one link
                     return false;
@@ -31,8 +28,6 @@ public class HydroCarbonPolimerization : ChemistryBase, IChemistry
             (int idx, int otherIdx, float distanceSquared, Random rnd, out float length) =>
             {
                 length = 3;
-                if (done[otherIdx])
-                    return false;
                 
                 if (molecules[idx] == molecules[otherIdx])
                     return false;

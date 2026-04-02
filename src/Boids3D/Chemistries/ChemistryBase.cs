@@ -18,7 +18,7 @@ public abstract class ChemistryBase
     
     protected int[] edgeIndices;
     
-    protected bool[] done;
+    protected bool[] reacted;
 
     protected int[] molecules;
 
@@ -50,7 +50,7 @@ public abstract class ChemistryBase
     protected void InternalInitialize(double[] proportion, float[] sizes, int[] colors)
     {
         stack = new int[sim.particles.Length];
-        done = new bool[sim.particles.Length];
+        reacted = new bool[sim.particles.Length];
         addedEdges = new Edge[sim.particles.Length];
         for (int t = 0; t < nearThreads.Length; t++)
             nearThreads[t] = new NearParticlesThreadContext();
@@ -107,7 +107,7 @@ public abstract class ChemistryBase
         this.moleculesCount = moleculesCount;
         this.moleculeParticleIndices = moleculeParticleIndices;
         this.moleculesCnt = moleculesCnt;
-        Array.Clear(done, 0, done.Length);
+        Array.Clear(reacted, 0, reacted.Length);
         InternalReact();
     }
 
@@ -239,7 +239,7 @@ public abstract class ChemistryBase
         for (int mainIndiceIdx = mainOffset; mainIndiceIdx < mainOffset + mainCount; mainIndiceIdx++)
         {
             int idx = particleIndices[mainIndiceIdx];
-            if (!shouldCheck(idx, rnd))
+            if (reacted[idx] || !shouldCheck(idx, rnd))
                 continue;
 
             // prepare array of near particles
@@ -263,7 +263,7 @@ public abstract class ChemistryBase
                 {
                     int otherIdx = particleIndices[otherIndiceIdx];
                     float distanceSquared = (sim.particles[idx].position - sim.particles[otherIdx].position).LengthSquared;
-                    if (idx != otherIdx && distanceSquared < maxDistanceSquared && !AreImmediatelyConnected(idx, otherIdx))
+                    if (idx != otherIdx && !reacted[otherIdx] && distanceSquared < maxDistanceSquared && !AreImmediatelyConnected(idx, otherIdx))
                     {
                         near[nearCount].particleIndex = otherIdx;
                         near[nearCount].distanceSquared = distanceSquared;
@@ -292,14 +292,28 @@ public abstract class ChemistryBase
                                 
                     }
 
-                    done[idx] = true;
-                    done[otherIdx] = true;
+                    MarkReacted(idx);
+                    MarkReacted(otherIdx);
                     break;
                 }
             }
             
             
             
+        }
+    }
+
+    private void MarkReacted(int particleIdx)
+    {
+        reacted[particleIdx] = true;
+        int moleculeIdx = molecules[particleIdx];
+        int molStart = moleculesStart[moleculeIdx];
+        int molCount = moleculesCount[moleculeIdx];
+        for (int i = 0; i < molCount; i++)
+        {
+            int idx = molStart + i;
+            var otherIdx = moleculeParticleIndices[idx];
+            reacted[otherIdx] = true;
         }
     }
 
