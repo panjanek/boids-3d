@@ -254,8 +254,8 @@ namespace Boids3D.Gpu
                 var translate = delta;
                 var newCenter = center + translate;
                 //center = newCenter;
-                center = 0.95f * center + 0.05f * newCenter;
-                //center = 0.95f * center + 0.05f * cameraPosition;
+                //center = 0.95f * center + 0.05f * newCenter;
+                center = 0.95f * center + 0.05f * cameraPosition;
                 //center = newCenter;
             }
             else
@@ -340,7 +340,7 @@ namespace Boids3D.Gpu
             }
 
             var recDir = app.configWindow.recordDir?.ToString();
-            if (string.IsNullOrWhiteSpace(recDir))
+            if (false && string.IsNullOrWhiteSpace(recDir))
             {
                 glControl.Invalidate();
             }
