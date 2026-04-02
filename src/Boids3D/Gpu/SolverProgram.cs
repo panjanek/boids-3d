@@ -69,6 +69,8 @@ namespace Boids3D.Gpu
         private uint[] neighboursStart;
 
         private uint[] neighboursCount;
+        
+        private int[] edgeIndices;
 
         private float[] restLengths;
         
@@ -204,7 +206,7 @@ namespace Boids3D.Gpu
             DownloadParticles(sim.particles);
             stopwatch.Restart();
             sim.chemistry.React(cellOffsets, cellCounts, particleIndices, 
-                                neighboursStart, neighboursCount, neighbours,
+                                neighboursStart, neighboursCount, neighbours, edgeIndices,
                                 molecules, moleculesStart, moleculesCount, moleculeParticleIndices, moleculesCnt);
             stopwatch.Stop();
             LastReactionTimeMs = stopwatch.Elapsed.TotalMilliseconds;
@@ -321,6 +323,7 @@ namespace Boids3D.Gpu
                 CreateBuffer(ref neighboursBuffer, (int)edgesCount * 2, Marshal.SizeOf<uint>());
                 CreateBuffer(ref restLengthsBuffer, (int)edgesCount * 2, Marshal.SizeOf<float>());
                 neighbours = new uint[edgesCount * 2];
+                edgeIndices = new int[edgesCount * 2];
                 restLengths = new float[edgesCount * 2];
             }
         }
@@ -364,10 +367,12 @@ namespace Boids3D.Gpu
 
                 neighbours[cursor[a]] = b;
                 restLengths[cursor[a]] = restLen;
+                edgeIndices[cursor[a]] = i;
                 cursor[a]++;
 
                 neighbours[cursor[b]] = a;
                 restLengths[cursor[b]] = restLen;
+                edgeIndices[cursor[b]] = i;
                 cursor[b]++;
             }
             

@@ -16,6 +16,8 @@ public abstract class ChemistryBase
 
     protected uint[] neighbours;
     
+    protected int[] edgeIndices;
+    
     protected bool[] done;
 
     protected int[] molecules;
@@ -90,7 +92,7 @@ public abstract class ChemistryBase
     }
 
     public virtual void React(int[] cellOffsets, int[] cellCounts, int[] particleIndices, 
-                              uint[] neighboursStart, uint[] neighboursCount, uint[] neighbours,
+                              uint[] neighboursStart, uint[] neighboursCount, uint[] neighbours, int[] edgeIndices,
                               int[] molecules, int[] moleculesStart, int[] moleculesCount, int[] moleculeParticleIndices, int moleculesCnt)
     {
         this.cellOffsets = cellOffsets;
@@ -99,6 +101,7 @@ public abstract class ChemistryBase
         this.neighboursStart = neighboursStart;
         this.neighboursCount = neighboursCount;
         this.neighbours = neighbours;
+        this.edgeIndices = edgeIndices;
         this.molecules = molecules;
         this.moleculesStart = moleculesStart;
         this.moleculesCount = moleculesCount;
