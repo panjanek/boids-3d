@@ -21,6 +21,10 @@ public class SimplePolimerization : ChemistryBase, IChemistry
             (int idx, int otherIdx, float distanceSquared, Random rnd, out float length) =>
             {
                 length = 3;
+                
+                if (molecules[idx] == molecules[otherIdx])
+                    return false;
+                
                 if (neighboursCount[otherIdx] >= 2)
                     return false;
 

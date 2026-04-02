@@ -329,7 +329,7 @@ namespace Boids3D.Gpu
         public void Step()
         {
             if (Application.Current.MainWindow == null || Application.Current.MainWindow.WindowState == System.Windows.WindowState.Minimized)
-                return;
+               return;
 
             //compute
             if (!Paused)
@@ -340,7 +340,7 @@ namespace Boids3D.Gpu
             }
 
             var recDir = app.configWindow.recordDir?.ToString();
-            if (false && string.IsNullOrWhiteSpace(recDir))
+            if (string.IsNullOrWhiteSpace(recDir))
             {
                 glControl.Invalidate();
             }

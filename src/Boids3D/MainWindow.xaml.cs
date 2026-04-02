@@ -55,14 +55,88 @@ namespace Boids3D
             app.configWindow.Activate();
 
             KeyDown += MainWindow_KeyDown;
-            System.Timers.Timer systemTimer = new System.Timers.Timer() { Interval = 10 };
-            systemTimer.Elapsed += SystemTimer_Elapsed;
-            systemTimer.Start();
+
             DispatcherTimer infoTimer = new DispatcherTimer() { Interval = TimeSpan.FromSeconds(1.0) };
             infoTimer.Tick += InfoTimer_Tick;
             infoTimer.Start();
+            
+            
+            System.Timers.Timer systemTimer = new System.Timers.Timer() { Interval = 10 };
+            systemTimer.Elapsed += SystemTimer_Elapsed;
+            systemTimer.Start();
+            
+            
+            /*
+            DispatcherTimer stepTimer = new DispatcherTimer(DispatcherPriority.ApplicationIdle) { Interval = TimeSpan.FromMilliseconds(10) };
+            stepTimer.Tick += StepTimer_Tick;
+            stepTimer.Start();
+            */
 
+            /*
+            CompositionTarget.Rendering += (o, args) =>
+            {
+                if (uiPending)
+                    return;
+
+                uiPending = true;
+                try
+                {
+                    app.renderer.Step();
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine(ex);
+                }
+                finally
+                {
+                    uiPending = false;
+                }
+
+            };*/
         }
+        
+        
+        private void SystemTimer_Elapsed(object? sender, System.Timers.ElapsedEventArgs e)
+        {
+            if (!uiPending)
+            {
+                Dispatcher.BeginInvoke(new Action(() =>
+                {
+                    uiPending = true;
+                    try
+                    {
+                        app.renderer.Step();
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine(ex);
+                    }
+                    finally
+                    {
+                        uiPending = false;
+                    }
+
+                    uiPending = false;
+                }), DispatcherPriority.Render);
+            }
+        }
+
+        /*
+        private void StepTimer_Tick(object? sender, EventArgs e)
+        {
+            
+            try
+            {
+                app.renderer.Step();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex);
+            }
+            
+        }*/
+        
+        
         public void MainWindow_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
         {
             switch (e.Key)
@@ -110,31 +184,6 @@ namespace Boids3D
                 parent.Children.Add(placeholder);
                 fullscreen.Close();
                 fullscreen = null;
-            }
-        }
-
-        private void SystemTimer_Elapsed(object? sender, System.Timers.ElapsedEventArgs e)
-        {
-            if (!uiPending)
-            {
-                uiPending = true;
-                Dispatcher.BeginInvoke(new Action(() =>
-                {
-                    try
-                    {
-                        app.renderer.Step();
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine(ex);
-                    }
-                    finally
-                    {
-                        uiPending = false;
-                    }
-
-                    uiPending = false;
-                }), DispatcherPriority.Render);
             }
         }
 

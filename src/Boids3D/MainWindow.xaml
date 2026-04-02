@@ -4,7 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:Boids3D"
-        mc:Ignorable="d"
+        mc:Ignorable="d" UseLayoutRounding="False" SnapsToDevicePixels="False"
         Title="Boids3D" Width="Auto" Height="Auto" WindowState="Normal" MinWidth="320" MinHeight="320">
 
     <Grid Name="parent" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Loaded="parent_Loaded">
