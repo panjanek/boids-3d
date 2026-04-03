@@ -184,6 +184,37 @@ public abstract class ChemistryBase
 
         return count;
     }
+    
+    protected void IterateImmediateConnections(int idx, Action<int> action)
+    {
+        uint neighCount = neighboursCount[idx];
+        if (neighCount == 0)
+            return;
+        
+        uint neighStart = neighboursStart[idx];
+        for (uint i = 0; i < neighCount; i++)
+        {
+            uint neighIdx = neighStart + i;
+            uint otherIdx = neighbours[neighIdx];
+            action((int)otherIdx);
+        }
+    }
+    
+    protected int CountInMolecule(int moleculeId, int type)
+    {
+        var count = 0;
+        var molCount = moleculesCount[moleculeId];
+        var molStart = moleculesStart[moleculeId];
+        for (uint i = 0; i < molCount; i++)
+        {
+            var mIdx = molStart + i;
+            var pIdx = moleculeParticleIndices[mIdx];
+            if (sim.particles[pIdx].type == type)
+                count++;
+        }
+
+        return count;
+    }
 
     private void CreatePartitions()
     {

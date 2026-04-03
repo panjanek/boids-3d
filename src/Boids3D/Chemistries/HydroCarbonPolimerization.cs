@@ -17,10 +17,14 @@ public class HydroCarbonPolimerization : ChemistryBase, IChemistry
         ConnectToNear(15, (idx, rnd) =>
             {
                 var p = sim.particles[idx];
-                if (p.type == 1 && neighboursCount[idx] >= 1) //hydrogen: only one link
-                    return false;
                 
                 if (p.type == 0 && neighboursCount[idx] >= 4)  //carbon: max 4
+                    return false;
+                
+                if (IsTerminalHydrogen(idx))
+                    return true;
+                
+                if (p.type == 1 && neighboursCount[idx] >= 1) //hydrogen: only one link
                     return false;
 
                 return true;
@@ -35,6 +39,18 @@ public class HydroCarbonPolimerization : ChemistryBase, IChemistry
                 var p = sim.particles[idx];
                 var other = sim.particles[otherIdx];
                 length = p.type == other.type ? 3 : 1.5f;
+
+                if (IsTerminalHydrogen(idx) && IsTerminalHydrogen(otherIdx))
+                {
+                    length = 1.5f;
+                    return true;
+                }
+                
+                if (p.type == 0 && neighboursCount[idx] >= 4)
+                    return false;
+                
+                if (p.type == 1 && neighboursCount[idx] >= 1)
+                    return false;
 
                 if (p.type == 1 && other.type == 1)
                     return false;
@@ -62,5 +78,37 @@ public class HydroCarbonPolimerization : ChemistryBase, IChemistry
             var a = dupl.Count();
             Console.WriteLine(dupl);
         }*/
+    }
+
+    private bool IsTerminalHydrogen(int idx)
+    {
+        var p = sim.particles[idx];
+        if (p.type == 1 && neighboursCount[idx] == 1)
+        {
+            int moleculeId = molecules[idx];
+            if (CountInMolecule(moleculeId, 0) > 3)
+            {
+                var carbonIdx = (int)neighbours[neighboursStart[idx]];
+                if (sim.particles[carbonIdx].type == 0)
+                {
+                    if (neighboursCount[carbonIdx] == 4 &&
+                        CountImmediateConnections(carbonIdx, 1) == 3 &&
+                        CountImmediateConnections(carbonIdx, 0) == 1)
+                    {
+                        bool hasHydrogenWith2Bonds = false;
+                        IterateImmediateConnections(carbonIdx, c =>
+                        {
+                            if (sim.particles[c].type == 1 && neighboursCount[c] != 1)
+                                hasHydrogenWith2Bonds = true;
+
+                        });
+                        
+                        return !hasHydrogenWith2Bonds;
+                    }
+                }
+            }
+        }
+
+        return false;
     }
 }

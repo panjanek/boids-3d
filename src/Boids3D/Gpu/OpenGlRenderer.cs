@@ -314,7 +314,6 @@ namespace Boids3D.Gpu
 
         private void GlControl_Paint(object? sender, PaintEventArgs e)
         {
-            FollowTrackedParticle();
             displayProgram.Run(
                 solverProgram.PointsBuffer,
                 solverProgram.EdgesBuffer,
@@ -338,9 +337,11 @@ namespace Boids3D.Gpu
                 app.simulation.config.t += app.simulation.config.dt;
                 solverProgram.Run(app.simulation);
             }
+            
+            FollowTrackedParticle();
 
             var recDir = app.configWindow.recordDir?.ToString();
-            if (false && string.IsNullOrWhiteSpace(recDir))
+            if (string.IsNullOrWhiteSpace(recDir))
             {
                 glControl.Invalidate();
             }
