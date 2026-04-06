@@ -146,8 +146,8 @@
                     <ComboBoxItem>5000</ComboBoxItem>
                     <ComboBoxItem>10000</ComboBoxItem>
                     <ComboBoxItem>25000</ComboBoxItem>
-                    <ComboBoxItem>50000</ComboBoxItem>
-                    <ComboBoxItem IsSelected="True">100000</ComboBoxItem>
+                    <ComboBoxItem IsSelected="True">50000</ComboBoxItem>
+                    <ComboBoxItem>100000</ComboBoxItem>
                     <ComboBoxItem>200000</ComboBoxItem>
                     <ComboBoxItem>300000</ComboBoxItem>
                     <ComboBoxItem>500000</ComboBoxItem>
@@ -197,10 +197,10 @@
                 <Slider Grid.Row="9" Grid.Column="1" Grid.ColumnSpan="1" Minimum="0.0" Maximum="200" SmallChange="0.1" LargeChange="2" ValueChanged="Slider_ValueChanged" Tag="config.wallForce" VerticalAlignment="Center"/>
                 <TextBlock Grid.Row="9" Grid.Column="2" Tag="config.wallForce"  FontFamily="Courier New" Margin="0,5,10,0" VerticalAlignment="Center" FontSize="11" MouseDown="infoText_MouseDown" Foreground="White" Background="DarkGray" TextAlignment="Center" Padding="1"/>
                 
-                <!-- repulsionForce -->
-                <TextBlock Grid.Row="10" Grid.Column="0" Text="repulsionForce ⓘ" VerticalAlignment="Center" Margin="10,0,8,0" TextWrapping="Wrap" Foreground="White" ToolTip="repulsionForce"/>
-                <Slider Grid.Row="10" Grid.Column="1" Grid.ColumnSpan="1" Minimum="0" Maximum="300" SmallChange="0.1" LargeChange="1" ValueChanged="Slider_ValueChanged" Tag="config.repulsionForce" VerticalAlignment="Center"/>
-                <TextBlock Grid.Row="10" Grid.Column="2" Tag="config.repulsionForce"  FontFamily="Courier New" Margin="0,5,10,0" VerticalAlignment="Center" FontSize="11" MouseDown="infoText_MouseDown" Foreground="White" Background="DarkGray" TextAlignment="Center" Padding="1"/>
+                <!-- forceMultiplier -->
+                <TextBlock Grid.Row="10" Grid.Column="0" Text="forceMultiplier ⓘ" VerticalAlignment="Center" Margin="10,0,8,0" TextWrapping="Wrap" Foreground="White" ToolTip="forceMultiplier"/>
+                <Slider Grid.Row="10" Grid.Column="1" Grid.ColumnSpan="1" Minimum="0" Maximum="10" SmallChange="0.01" LargeChange="0.1" ValueChanged="Slider_ValueChanged" Tag="config.forceMultiplier" VerticalAlignment="Center"/>
+                <TextBlock Grid.Row="10" Grid.Column="2" Tag="config.forceMultiplier"  FontFamily="Courier New" Margin="0,5,10,0" VerticalAlignment="Center" FontSize="11" MouseDown="infoText_MouseDown" Foreground="White" Background="DarkGray" TextAlignment="Center" Padding="1"/>
                 
                 <!-- springForce -->
                 <TextBlock Grid.Row="11" Grid.Column="0" Text="springForce ⓘ" VerticalAlignment="Center" Margin="10,0,8,0" TextWrapping="Wrap" Foreground="White" ToolTip="springForce"/>

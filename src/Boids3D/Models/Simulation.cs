@@ -60,7 +60,7 @@ namespace Boids3D.Models
 
         public void StartSimulation(int particlesCount, float size)
         {
-            var previousSpeciesCount = config.speciesCount;
+            var previousSpeciesCount = config.typesCount;
             config.fieldSize = size;
             config.particleCount = particlesCount;
             InitializeParticles(particlesCount);
@@ -68,29 +68,29 @@ namespace Boids3D.Models
         
         public int GetForceOffset(bool sameMolecule, int specMe, int specOther)
         {
-            int baseOffset = sameMolecule ? config.speciesCount * config.speciesCount * KeypointsCount : 0;
-            int offset = baseOffset + (specMe * config.speciesCount + specOther) * KeypointsCount;
+            int baseOffset = sameMolecule ? config.typesCount * config.typesCount * KeypointsCount : 0;
+            int offset = baseOffset + (specMe * config.typesCount + specOther) * KeypointsCount;
             return offset;
         }
         
-        private void SetSimpleForce(bool sameMolecule, int specMe, int specOther, float val0, float val1)
+        public void SetSimpleForce(bool sameMolecule, int specMe, int specOther, float val0, float val1)
         {
             int offset = GetForceOffset(sameMolecule, specMe, specOther);
             var d = config.maxDist / KeypointsCount;
             forces[offset + 0] = new Vector4(0 * d, val0, 0, 0);
-            forces[offset + 1] = new Vector4(1 * d, 0, 0, 0);
-            forces[offset + 2] = new Vector4(2 * d, val1, 0, 0);
+            forces[offset + 1] = new Vector4(0.5f * d, val1, 0, 0);
+            forces[offset + 2] = new Vector4(2 * d, 0, 0, 0);
         }
         
         public void InitializeDefaultForces()
         {
-            forces = new Vector4[2 * config.speciesCount * config.speciesCount * KeypointsCount];
-            for (int i = 0; i < config.speciesCount; i++)
+            forces = new Vector4[2 * config.typesCount * config.typesCount * KeypointsCount];
+            for (int i = 0; i < config.typesCount; i++)
             {
-                for (int j = 0; j < config.speciesCount; j++)
+                for (int j = 0; j < config.typesCount; j++)
                 {
-                    SetSimpleForce(false, i, j, -1, 0);
-                    SetSimpleForce(true, i, j, -1, 0);
+                    SetSimpleForce(false, i, j, -1, -0.5f);
+                    SetSimpleForce(true, i, j, -1, -0.5f);
                 }
             }
         }

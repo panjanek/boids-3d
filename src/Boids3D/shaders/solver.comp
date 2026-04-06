@@ -13,8 +13,8 @@ struct ShaderConfig {
     float fieldSize;
     float cellSize;
     float maxDist;
-    int speciesCount;
-    float repulsionForce;
+    int typesCount;
+    float forceMultiplier;
     int trackedIdx;
     float wallForce;
     float restLengthMult;
@@ -74,6 +74,10 @@ layout(std430, binding = 3) writeonly buffer EdgesBuffer
     Edge edges[];
 };
 
+layout(std430, binding = 4) readonly buffer ForceBuffer {
+    vec4 forces[];
+};
+
 layout(std430, binding = 5) writeonly buffer TrackingBuffer
 {
     Particle tracked;
@@ -110,6 +114,8 @@ layout(std430, binding = 12) buffer NeighborsCount {
 layout(std430, binding = 13) buffer RestLengths {
     float restLengths[];
 };
+
+#define KEYPOINTS_COUNT       3
 
 uint hash(uint state)
 {
@@ -160,6 +166,28 @@ void cube_pos(inout vec4 pos)
         pos.z = 0;
 }
 
+float evaluateForceForOffset(int offset, float dist)
+{
+    // Clamp distance to valid range
+    dist = clamp(dist, forces[offset].x, forces[offset+KEYPOINTS_COUNT-1].x);
+
+    // Find the segment [i, i+1] that contains dist
+    for (int i = 0; i < KEYPOINTS_COUNT-1; ++i)
+    {
+        float x0 = forces[offset+i].x;
+        float x1 = forces[offset+i + 1].x;
+
+        if (dist <= x1)
+        {
+            float t = (dist - x0) / (x1 - x0);
+            return mix(forces[offset+i].y, forces[offset+i + 1].y, t);
+        }
+    }
+
+    // Safety fallback (should never happen)
+    return 0.0;
+}
+
 float one_wall_force(float d, float m)
 {
     float f = 0.0;
@@ -194,7 +222,7 @@ vec4 compute_wall_force(vec4 pos)
 }
 
 
-vec4 compute_forces(uint idx, Particle p, float rep_strength)
+vec4 compute_forces(uint idx, Particle p)
 {
     int cellCount2 = config.cellCount * config.cellCount;
     int gridX = p.cellIndex % config.cellCount;
@@ -202,7 +230,7 @@ vec4 compute_forces(uint idx, Particle p, float rep_strength)
     int gridZ = p.cellIndex / (cellCount2);
     ivec3 main = ivec3(gridX, gridY, gridZ);
 
-    vec4 rep_force = vec4(0,0,0,0);
+    vec4 force = vec4(0,0,0,0);
     for (int dz = -1; dz <= 1; dz++)
     for (int dy = -1; dy <= 1; dy++)
     for (int dx = -1; dx <= 1; dx++)
@@ -226,21 +254,33 @@ vec4 compute_forces(uint idx, Particle p, float rep_strength)
             {
                  Particle other = inParticles[otherIdx];
                  
-                 vec4 d = p.position - other.position;
+                 vec4 d = other.position - p.position;
+                 float r = length(d);
+                 int baseOffset = molecules[idx] == molecules[otherIdx] ? config.typesCount * config.typesCount * KEYPOINTS_COUNT : 0;
+                 int forceOffset = baseOffset + (p.type * config.typesCount + other.type) * KEYPOINTS_COUNT;
+                 float f = evaluateForceForOffset(forceOffset, r);
+                 //f=f*0.000001;
+                 force += f * config.forceMultiplier * d / r;
+                 
+                 /*
                  float epsilon = 0.1;
                  float r2 = dot(d, d) + epsilon;
                  float r = length(d);
                  if (r2 > epsilon)
                      rep_force += d * (rep_strength / (r2 * sqrt(r2)));
+                 */
             }
         }
     }
     
     vec4 wall_force = compute_wall_force(p.position);
+    return wall_force + force;
+    /*
     if (length(wall_force)>0.1)
         return wall_force;
     else
-        return wall_force + rep_force;
+        return wall_force + force;
+        */
 }
 
 vec4 flatten_force(uint idx, vec4 pos, float strength)
@@ -272,8 +312,8 @@ void update_one(uint idx)
     vec4 pos = p.position;
     vec4 dir = p.direction;
 
-    //compute all forces
-    vec4 acc = compute_forces(idx, p, config.repulsionForce);
+    //compute forces
+    vec4 acc = compute_forces(idx, p);
     //acc = vec4(0,0,0,0);
     
     // spring force

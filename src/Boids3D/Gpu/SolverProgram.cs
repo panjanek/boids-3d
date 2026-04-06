@@ -186,6 +186,7 @@ namespace Boids3D.Gpu
             GL.BindBufferBase(BufferRangeTarget.ShaderStorageBuffer, 1, pointsBufferA);
             GL.BindBufferBase(BufferRangeTarget.ShaderStorageBuffer, 2, pointsBufferB);
             GL.BindBufferBase(BufferRangeTarget.ShaderStorageBuffer, 3, edgesBuffer);
+            GL.BindBufferBase(BufferRangeTarget.ShaderStorageBuffer, 4, forcesBuffer);
             GL.BindBufferBase(BufferRangeTarget.ShaderStorageBuffer, 5, trackingBuffer);
             GL.BindBufferBase(BufferRangeTarget.ShaderStorageBuffer, 6, cellCountBuffer);
             GL.BindBufferBase(BufferRangeTarget.ShaderStorageBuffer, 7, cellOffsetBuffer2);
@@ -341,7 +342,7 @@ namespace Boids3D.Gpu
             if (currentForcesCount != forcesCount)
             {
                 currentForcesCount = forcesCount;
-                CreateBuffer(ref forcesBuffer, currentForcesCount, Marshal.SizeOf<int>());
+                CreateBuffer(ref forcesBuffer, currentForcesCount, Marshal.SizeOf<Vector4>());
             }
         }
 

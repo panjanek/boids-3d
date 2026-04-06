@@ -48,7 +48,7 @@ namespace Boids3D
             app.simulation = new Simulation();
             //app.simulation.chemistry = new SimplePolimerization();
             app.simulation.chemistry = new HydroCarbonPolimerization();
-            app.simulation.StartSimulation(100000, 1000);
+            app.simulation.StartSimulation(50000, 1000);
             app.renderer = new OpenGlRenderer(placeholder, app);
             app.configWindow = new ConfigWindow(app);
             app.configWindow.Show();

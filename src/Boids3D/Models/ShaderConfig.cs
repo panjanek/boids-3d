@@ -31,9 +31,9 @@ namespace Boids3D.Models
 
         [FieldOffset(28)] public float maxDist = 60;
 
-        [FieldOffset(32)] public int speciesCount = 0;
+        [FieldOffset(32)] public int typesCount = 0;
 
-        [FieldOffset(36)] public float repulsionForce = 25f;   
+        [FieldOffset(36)] public float forceMultiplier = 1f;   
 
         [FieldOffset(40)] public int trackedIdx;
 

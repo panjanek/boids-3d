@@ -71,7 +71,7 @@ public abstract class ChemistryBase
         for (int p = 1; p < proportion.Length; p++)
             propSums[p] = propSums[p - 1] + proportion[p];
 
-        sim.config.speciesCount = proportion.Length;
+        sim.config.typesCount = proportion.Length;
         for(int i=0; i< sim.config.particleCount; i++)
         {
             sim.particles[i].position = new Vector4(sim.config.fieldSize * sim.rnd.NextSingle(), sim.config.fieldSize * sim.rnd.NextSingle(), sim.config.fieldSize * sim.rnd.NextSingle(), 0);
