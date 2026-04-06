@@ -11,7 +11,7 @@ public class TestingForcesChemistry : ChemistryBase, IChemistry
         this.sim = sim;
         InternalInitialize([1],[1], [0]);
         sim.InitializeDefaultForces();
-        sim.SetSimpleForce(true, 0, 0, -1, 1);
+        sim.SetSimpleForce(true, 0, 0, -1f, 0.5f);
     }
 
     protected override void InternalReact()
