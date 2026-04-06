@@ -154,17 +154,11 @@ public abstract class ChemistryBase
 
     private void RemoveEdges(Edge[] edgesToRemove)
     {
-        var edgesCount = sim.edges.Length;
-        List<int> overwrittenIndexes = new List<int>();
+        int removedCount = 0;
         for (var r = 0; r < edgesToRemove.Length; r++)
         {
             var edge = edgesToRemove[r];
-
-            bool found = false;
             uint neighCount = neighboursCount[edge.a];
-            if (neighCount == 0)
-                throw new Exception("1");
-        
             uint neighStart = neighboursStart[edge.a];
             for (uint i = 0; i < neighCount; i++)
             {
@@ -173,40 +167,25 @@ public abstract class ChemistryBase
                 if (otherIdx == edge.b)
                 {
                     var edgeIdx = edgeIndices[neighIdx];
-                    if (edgeIdx < edgesCount)
-                    {
-                        var test = sim.edges[edgeIdx];
-                        if ((test.a == edge.a && test.b == edge.b) || (test.a == edge.b && test.b == edge.a))
-                        {
-                            edgesCount--;
-                            sim.edges[edgeIdx] = sim.edges[edgesCount];
-                            found = true;
-                            overwrittenIndexes.Add(edgeIdx);
-                            break;
-                        }
-                    }
-                }
-            }
-
-            if (!found)
-            {
-                foreach (var edgeIdx in overwrittenIndexes)
-                {
                     var test = sim.edges[edgeIdx];
                     if ((test.a == edge.a && test.b == edge.b) || (test.a == edge.b && test.b == edge.a))
                     {
-                        edgesCount--;
-                        sim.edges[edgeIdx] = sim.edges[edgesCount];
+                        sim.edges[edgeIdx].flags = -1;
+                        removedCount++;
                         break;
                     }
                 }
-                
-                throw new Exception("1");
             }
         }
+
+        if (removedCount != edgesToRemove.Length)
+            throw new Exception("a");
         
-        var newEdges = new Edge[edgesCount];
-        Array.Copy(sim.edges, newEdges, edgesCount);
+        var newEdges = new Edge[sim.edges.Length - removedCount];
+        int idx = 0;
+        for(int i=0; i<sim.edges.Length; i++)
+            if (sim.edges[i].flags != -1)
+                newEdges[idx++] = sim.edges[i];
         sim.edges = newEdges;
     }
     

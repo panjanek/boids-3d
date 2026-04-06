@@ -75,7 +75,7 @@ public class HydroCarbonPolimerization : ChemistryBase, IChemistry
             if (moleculesCount[moleculeId] <= 10)
                 return;
 
-            if (rnd.NextDouble() < 0.80)
+            if (rnd.NextDouble() < 0.5)
                 return;
 
             bool done = false;
