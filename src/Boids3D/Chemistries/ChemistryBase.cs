@@ -47,6 +47,8 @@ public abstract class ChemistryBase
     private List<int>[] partitions;
     
     private NearParticlesThreadContext[] nearThreads = new NearParticlesThreadContext[ThreadCount];
+    
+    private IterateMoleculesThreadContext[] moleculeThreads = new IterateMoleculesThreadContext[ThreadCount];
     protected void InternalInitialize(double[] proportion, float[] sizes, int[] colors)
     {
         stack = new int[sim.particles.Length];
@@ -54,6 +56,8 @@ public abstract class ChemistryBase
         addedEdges = new Edge[sim.particles.Length];
         for (int t = 0; t < nearThreads.Length; t++)
             nearThreads[t] = new NearParticlesThreadContext();
+        for (int t = 0; t < moleculeThreads.Length; t++)
+            moleculeThreads[t] = new IterateMoleculesThreadContext();
 
         molecules = new int[sim.particles.Length];
         moleculesStart = new int[sim.particles.Length];
@@ -112,6 +116,99 @@ public abstract class ChemistryBase
     }
 
     protected abstract void InternalReact();
+
+    protected void IterateMolecules(Action<int, Random, List<Edge>, List<Edge>> processMolecule)
+    {
+        foreach (var thread in moleculeThreads)
+        {
+            thread.AddedEdges.Clear();
+            thread.RemovedEdges.Clear();
+        }
+
+        ParallelHelper.ParallelProcess(moleculeThreads, moleculesCnt, (thread, moleculeId) =>
+        {
+            if (thread.Rnd.NextSingle() > sim.reactionProbability)
+                return;
+            
+            var molCount = moleculesCount[moleculeId];
+            var molStart = moleculesStart[moleculeId];
+            for (uint i = 0; i < molCount; i++)
+            {
+                var mIdx = molStart + i;
+                var pIdx = moleculeParticleIndices[mIdx];
+                if (reacted[pIdx])
+                    return;
+            }
+
+            processMolecule(moleculeId, thread.Rnd, thread.AddedEdges, thread.RemovedEdges);
+        });
+
+        var totalAddedEdges = moleculeThreads.SelectMany(t => t.AddedEdges).ToArray();
+        var totalRemovedEdges = moleculeThreads.SelectMany(t => t.RemovedEdges).ToArray();
+
+        if (totalRemovedEdges.Length > 0)
+            RemoveEdges(totalRemovedEdges);
+        
+        AddEdges(totalAddedEdges, totalAddedEdges.Length);
+    }
+
+    private void RemoveEdges(Edge[] edgesToRemove)
+    {
+        var edgesCount = sim.edges.Length;
+        List<int> overwrittenIndexes = new List<int>();
+        for (var r = 0; r < edgesToRemove.Length; r++)
+        {
+            var edge = edgesToRemove[r];
+
+            bool found = false;
+            uint neighCount = neighboursCount[edge.a];
+            if (neighCount == 0)
+                throw new Exception("1");
+        
+            uint neighStart = neighboursStart[edge.a];
+            for (uint i = 0; i < neighCount; i++)
+            {
+                uint neighIdx = neighStart + i;
+                uint otherIdx = neighbours[neighIdx];
+                if (otherIdx == edge.b)
+                {
+                    var edgeIdx = edgeIndices[neighIdx];
+                    if (edgeIdx < edgesCount)
+                    {
+                        var test = sim.edges[edgeIdx];
+                        if ((test.a == edge.a && test.b == edge.b) || (test.a == edge.b && test.b == edge.a))
+                        {
+                            edgesCount--;
+                            sim.edges[edgeIdx] = sim.edges[edgesCount];
+                            found = true;
+                            overwrittenIndexes.Add(edgeIdx);
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if (!found)
+            {
+                foreach (var edgeIdx in overwrittenIndexes)
+                {
+                    var test = sim.edges[edgeIdx];
+                    if ((test.a == edge.a && test.b == edge.b) || (test.a == edge.b && test.b == edge.a))
+                    {
+                        edgesCount--;
+                        sim.edges[edgeIdx] = sim.edges[edgesCount];
+                        break;
+                    }
+                }
+                
+                throw new Exception("1");
+            }
+        }
+        
+        var newEdges = new Edge[edgesCount];
+        Array.Copy(sim.edges, newEdges, edgesCount);
+        sim.edges = newEdges;
+    }
     
     protected void ConnectToNear(float maxDistance, Func<int, Random, bool> shouldCheck, ShouldConnectDelegate shouldConnect, bool parallel = true)
     {
@@ -197,6 +294,18 @@ public abstract class ChemistryBase
             uint neighIdx = neighStart + i;
             uint otherIdx = neighbours[neighIdx];
             action((int)otherIdx);
+        }
+    }
+    
+    protected void IterateMolecule(int moleculeId, Action<int> action)
+    {
+        var molCount = moleculesCount[moleculeId];
+        var molStart = moleculesStart[moleculeId];
+        for (uint i = 0; i < molCount; i++)
+        {
+            var mIdx = molStart + i;
+            var pIdx = moleculeParticleIndices[mIdx];
+            action(pIdx);
         }
     }
     
@@ -398,4 +507,16 @@ public class NearParticlesThreadContext : IThreadContext
     public Random Rnd { get; set; } = new Random();
 
     public List<Edge> AddedEdges { get; set; } = new List<Edge>();
+}
+
+public class IterateMoleculesThreadContext : IThreadContext
+{
+    public int StartIndex { get; set; }
+    public int EndIndex { get; set; }
+
+    public Random Rnd { get; set; } = new Random();
+
+    public List<Edge> AddedEdges { get; set; } = new List<Edge>();
+    
+    public List<Edge> RemovedEdges { get; set; } = new List<Edge>();
 }

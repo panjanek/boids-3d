@@ -1,4 +1,5 @@
-﻿using Boids3D.Models;
+﻿using System.Windows.Media.Effects;
+using Boids3D.Models;
 using OpenTK.Graphics.ES30;
 using OpenTK.Mathematics;
 
@@ -68,16 +69,50 @@ public class HydroCarbonPolimerization : ChemistryBase, IChemistry
                 return true;
             });
 
-        /*
-        var dupl = sim.edges.GroupBy(e =>
-        new {
-            e.a, e.b
-        }).Where(g=>g.Count() > 1).ToList();
-        if (dupl.Count() > 0)
+
+        IterateMolecules((moleculeId, rnd, added, removed) =>
         {
-            var a = dupl.Count();
-            Console.WriteLine(dupl);
-        }*/
+            if (moleculesCount[moleculeId] <= 10)
+                return;
+
+            if (rnd.NextDouble() < 0.80)
+                return;
+
+            bool done = false;
+            IterateMolecule(moleculeId, pIDx =>
+            {
+                if (!done && sim.particles[pIDx].type == 1 && neighboursCount[pIDx] == 2)
+                {
+                    var h1 = (uint)pIDx;
+                    var neighStartH1 = neighboursStart[h1];
+                    var h2 = sim.particles[neighbours[neighStartH1]].type == 1
+                        ? neighbours[neighStartH1]
+                        : neighbours[neighStartH1 + 1];
+
+                    if (sim.particles[h2].type == 0)
+                        throw new Exception("a");
+                    
+                    var c0 = sim.particles[neighbours[neighStartH1]].type == 0
+                        ? neighbours[neighStartH1]
+                        : neighbours[neighStartH1 + 1];
+                    
+                    var neighStartH2 = neighboursStart[h2];
+                    var c3 = sim.particles[neighbours[neighStartH2]].type == 0
+                        ? neighbours[neighStartH2]
+                        : neighbours[neighStartH2 + 1];
+                    
+                    if (sim.particles[c0].type == 1 || sim.particles[c3].type == 1)
+                        throw new Exception("a");
+                    
+                    removed.Add(new Edge() { a = c0, b = h1 });
+                    removed.Add(new Edge() { a = h1, b = h2 });
+                    removed.Add(new Edge() { a = h2, b = c3 });
+                    
+                    added.Add(new Edge() { a = c0, b = c3, restLength = 3 });
+                    done = true;
+                }
+            });
+        });
     }
 
     private bool IsTerminalHydrogen(int idx)

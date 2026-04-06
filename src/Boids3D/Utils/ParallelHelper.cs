@@ -35,6 +35,36 @@ public static class ParallelHelper
             }
         });
     }
+    
+    public static void ParallelProcess<TContext>(TContext[] threads, int count, Action<TContext, int> process)
+        where TContext : IThreadContext
+    {
+        if (process == null) throw new ArgumentNullException(nameof(process));
+        int numberOfThreads = threads.Length;
+        
+        // Clamp thread count to data size
+        numberOfThreads = Math.Min(numberOfThreads, count);
+
+        int chunkSize = (count + numberOfThreads - 1) / numberOfThreads;
+
+        var options = new ParallelOptions
+        {
+            MaxDegreeOfParallelism = numberOfThreads
+        };
+
+        Parallel.For(0, numberOfThreads, options, threadIndex =>
+        {
+            int start = threadIndex * chunkSize;
+            int end = Math.Min(start + chunkSize, count);
+
+            threads[threadIndex].StartIndex = start;
+            threads[threadIndex].EndIndex = end;
+            for (int i = start; i < end; i++)
+            {
+                process(threads[threadIndex], i);
+            }
+        });
+    }
 }
 
 public interface IThreadContext
