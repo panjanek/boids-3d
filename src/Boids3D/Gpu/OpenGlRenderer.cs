@@ -281,6 +281,7 @@ namespace Boids3D.Gpu
         {
             solverProgram.UploadParticles(app.simulation.particles);
             solverProgram.UploadEdges(app.simulation.edges);
+            solverProgram.UploadForces(app.simulation.forces);
         }
      
         public void StartTracking(int idx)

@@ -11,6 +11,7 @@ public class HydroCarbonPolimerization : ChemistryBase, IChemistry
     {
         this.sim = sim;
         InternalInitialize([1, 3], [2,1], [0, 1]);
+        sim.InitializeDefaultForces();
     }
 
     protected override void InternalReact()

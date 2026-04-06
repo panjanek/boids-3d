@@ -50,11 +50,15 @@ namespace Boids3D.Gpu
 
         public int restLengthsBuffer;
 
+        public int forcesBuffer;
+
         private int currentParticlesCount = -1;
         
         private int currentEdgesCount = -1;
 
         private int currentTotalCellsCount;
+
+        private int currentForcesCount = -1;
 
         private int shaderPointStrideSize;
 
@@ -121,7 +125,7 @@ namespace Boids3D.Gpu
 
         public void Run(Simulation sim)
         {
-            PrepareBuffers(sim.config.particleCount, sim.config.totalCellCount, sim.edges.Length);
+            PrepareBuffers(sim.config.particleCount, sim.config.totalCellCount, sim.edges.Length, sim.forces.Length);
             int dispatchGroupsX = (currentParticlesCount + ShaderUtil.LocalSizeX - 1) / ShaderUtil.LocalSizeX;
             if (dispatchGroupsX > maxGroupsX)
                 dispatchGroupsX = maxGroupsX;           
@@ -129,7 +133,7 @@ namespace Boids3D.Gpu
             sim.config.cellCount = (int)Math.Floor(sim.config.fieldSize / sim.config.maxDist);
             sim.config.cellSize = sim.config.fieldSize / sim.config.cellCount;
             sim.config.totalCellCount = sim.config.cellCount * sim.config.cellCount * sim.config.cellCount;
-            PrepareBuffers(sim.config.particleCount, sim.config.totalCellCount, sim.edges.Length);
+            PrepareBuffers(sim.config.particleCount, sim.config.totalCellCount, sim.edges.Length, sim.forces.Length);
 
             //upload config
             GL.BindBuffer(BufferTarget.UniformBuffer, uboConfig);
@@ -215,7 +219,7 @@ namespace Boids3D.Gpu
 
         public void UploadParticles(Particle[] particles)
         {
-            PrepareBuffers(particles.Length, currentTotalCellsCount, currentEdgesCount);
+            PrepareBuffers(particles.Length, currentTotalCellsCount, currentEdgesCount, currentForcesCount);
             GL.BindBuffer(BufferTarget.ShaderStorageBuffer, pointsBufferA);
             GL.BufferSubData(BufferTarget.ShaderStorageBuffer, 0, particles.Length * shaderPointStrideSize, particles);
             GL.BindBuffer(BufferTarget.ShaderStorageBuffer, pointsBufferB);
@@ -224,7 +228,7 @@ namespace Boids3D.Gpu
         
         public void UploadEdges(Edge[] edges)
         {
-            PrepareBuffers(currentParticlesCount, currentTotalCellsCount, edges.Length);
+            PrepareBuffers(currentParticlesCount, currentTotalCellsCount, edges.Length, currentForcesCount);
             GL.BindBuffer(BufferTarget.ShaderStorageBuffer, edgesBuffer);
             GL.BufferSubData(BufferTarget.ShaderStorageBuffer, 0, edges.Length * Marshal.SizeOf<Edge>(), edges);
             
@@ -239,6 +243,13 @@ namespace Boids3D.Gpu
             GL.BufferSubData(BufferTarget.ShaderStorageBuffer, 0, restLengths.Length * Marshal.SizeOf<float>(), restLengths);
             GL.BindBuffer(BufferTarget.ShaderStorageBuffer, moleculesBuffer);
             GL.BufferSubData(BufferTarget.ShaderStorageBuffer, 0, molecules.Length * Marshal.SizeOf<int>(), molecules);
+        }
+
+        public void UploadForces(Vector4[] forces)
+        {
+            PrepareBuffers(currentParticlesCount, currentTotalCellsCount, currentEdgesCount, forces.Length);
+            GL.BindBuffer(BufferTarget.ShaderStorageBuffer, forcesBuffer);
+            GL.BufferSubData(BufferTarget.ShaderStorageBuffer, 0, forces.Length * Marshal.SizeOf<Vector4>(), forces);
         }
 
         public void DownloadParticles(Particle[] particles, bool bufferB = false)
@@ -290,7 +301,7 @@ namespace Boids3D.Gpu
             GL.BufferSubData(BufferTarget.ShaderStorageBuffer, 0, size * Marshal.SizeOf<int>(), buffer);
         }
 
-        private void PrepareBuffers(int particlesCount, int totalCellsCount, int edgesCount)
+        private void PrepareBuffers(int particlesCount, int totalCellsCount, int edgesCount, int forcesCount)
         {
             if (currentParticlesCount != particlesCount)
             {
@@ -325,6 +336,12 @@ namespace Boids3D.Gpu
                 neighbours = new uint[edgesCount * 2];
                 edgeIndices = new int[edgesCount * 2];
                 restLengths = new float[edgesCount * 2];
+            }
+
+            if (currentForcesCount != forcesCount)
+            {
+                currentForcesCount = forcesCount;
+                CreateBuffer(ref forcesBuffer, currentForcesCount, Marshal.SizeOf<int>());
             }
         }
 

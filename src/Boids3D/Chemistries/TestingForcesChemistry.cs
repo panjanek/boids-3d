@@ -4,7 +4,7 @@ using OpenTK.Mathematics;
 
 namespace Boids3D.Chemistries;
 
-public class SimplePolimerization : ChemistryBase, IChemistry
+public class TestingForcesChemistry : ChemistryBase, IChemistry
 {
     public void Initialize(Simulation sim)
     {
@@ -17,7 +17,9 @@ public class SimplePolimerization : ChemistryBase, IChemistry
     {
         ConnectToNear(30, (idx, rnd) =>
             {
-                return neighboursCount[idx] < 2;
+                
+                //return neighboursCount[idx] < 2;
+                return false;
             },
             (int idx, int otherIdx, float distanceSquared, Random rnd, out float length) =>
             {

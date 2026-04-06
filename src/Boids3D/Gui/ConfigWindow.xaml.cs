@@ -102,6 +102,7 @@ namespace Boids3D.Gui
             
             chemistry.Items.Add(new ComboBoxItem() { Content = "Simple polymerization", Tag = new Func<IChemistry>(() => new SimplePolimerization()) });
             chemistry.Items.Add(new ComboBoxItem() { Content = "Simple hydrocarbons", Tag = new Func<IChemistry>(() => new HydroCarbonPolimerization()) });
+            chemistry.Items.Add(new ComboBoxItem() { Content = "Testing forces", Tag = new Func<IChemistry>(() => new TestingForcesChemistry()) });
             chemistry.SelectedIndex = 1;
 
             KeyDown += (s, e) => app.mainWindow.MainWindow_KeyDown(s, e);
