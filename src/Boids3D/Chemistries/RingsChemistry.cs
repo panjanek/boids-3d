@@ -9,7 +9,7 @@ public class RingsChemistry : ChemistryBase, IChemistry
     public void Initialize(Simulation sim)
     {
         this.sim = sim;
-        InternalInitialize([1, 3], [2,1], [0, 1]);
+        InternalInitialize([1, 1], [2,1], [0, 1]);
         sim.InitializeDefaultForces();
         
         sim.SetSimpleForce(true, 1, 1, 2f, 1f);
@@ -17,7 +17,7 @@ public class RingsChemistry : ChemistryBase, IChemistry
 
     protected override void InternalReact()
     {
-        int ringSize = 7;
+        int minRingSize = 8;
         float ccLen = 5f;
         float chLen = 2.5f;
         
@@ -31,15 +31,27 @@ public class RingsChemistry : ChemistryBase, IChemistry
 
                 var moleculeId = molecules[idx];
                 var otherMoleculeId = molecules[otherIdx];
+                
+                /*
                 if (CountInMolecule(moleculeId, 0) > ringSize)
                     return false;
                 
                 if (CountInMolecule(moleculeId, 0) + CountInMolecule(otherMoleculeId, 0) > ringSize)
                     return false;
+                */
 
                 if (sim.particles[otherIdx].type == 0)
                 {
                     if (CountImmediateConnections(idx, 0) + CountImmediateConnections(otherIdx, 0) < 2)
+                    {
+                        length = ccLen;
+                        return true;
+                    }
+
+                    if (CountImmediateConnections(idx, 0) == 1 && 
+                        CountImmediateConnections(otherIdx, 0) == 1 &&
+                        moleculeId != otherMoleculeId) //&&
+                        //CountInMolecule(moleculeId, 0) + CountInMolecule(otherMoleculeId, 0) >= minRingSize)
                     {
                         length = ccLen;
                         return true;
@@ -59,7 +71,7 @@ public class RingsChemistry : ChemistryBase, IChemistry
 
         IterateMolecules((moleculeId, rnd, added, removed) =>
         {
-            if (CountInMolecule(moleculeId, 0) == ringSize)
+            if (CountInMolecule(moleculeId, 0) >= minRingSize)
             {
                 List<int> terminal = new List<int>();
                 IterateMolecule(moleculeId, pIDx =>
