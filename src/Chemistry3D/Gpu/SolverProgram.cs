@@ -1,0 +1,469 @@
+﻿using System;
+using System.Buffers;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO.Pipes;
+using System.Linq;
+using System.Runtime.InteropServices;
+using System.Text;
+using System.Threading.Tasks;
+using OpenTK.Graphics.OpenGL;
+using OpenTK.Mathematics;
+using Chemistry3D.Utils;
+using Chemistry3D.Models;
+
+namespace Chemistry3D.Gpu
+{
+    public class SolverProgram
+    {
+        private int maxGroupsX;
+
+        private int solvingProgram;
+
+        private int tilingCountProgram;
+
+        private int tilingBinProgram;
+
+        private int uboConfig;
+
+        private int pointsBufferA;
+
+        private int pointsBufferB;
+
+        private int trackingBuffer;
+
+        private int cellCountBuffer;
+
+        private int cellOffsetBuffer;
+        
+        private int cellOffsetBuffer2;
+
+        private int particleIndicesBuffer;
+
+        private int moleculesBuffer;
+        
+        public int neighboursBuffer;
+
+        public int neighboursStartBuffer;
+
+        public int neighboursCountBuffer;
+
+        public int restLengthsBuffer;
+
+        public int forcesBuffer;
+
+        private int currentParticlesCount = -1;
+        
+        private int currentEdgesCount = -1;
+
+        private int currentTotalCellsCount;
+
+        private int currentForcesCount = -1;
+
+        private int shaderPointStrideSize;
+
+        private int[] cellCounts;
+
+        private int[] cellOffsets;
+        
+        private int[] particleIndices;
+        
+        private uint[] neighbours;
+
+        private uint[] neighboursStart;
+
+        private uint[] neighboursCount;
+        
+        private int[] edgeIndices;
+
+        private float[] restLengths;
+        
+        private int[] molecules;
+
+        private int[] moleculesStart;
+
+        private int[] moleculesCount;
+
+        private int[] moleculeParticleIndices;
+
+        protected int moleculesCnt;
+
+        private int[] stack = new int[0];
+
+        private Particle trackedParticle;
+        
+        private int edgesBuffer;
+
+        private int stepCount = 0;
+        
+        private Stopwatch stopwatch = new Stopwatch();
+        
+        
+        public int PointsBuffer => pointsBufferB;
+        
+        public int EdgesBuffer => edgesBuffer;
+
+        public double LastReactionTimeMs { get; private set; }
+
+        public SolverProgram()
+        {
+            uboConfig = GL.GenBuffer();
+            GL.BindBuffer(BufferTarget.UniformBuffer, uboConfig);
+            int configSizeInBytes = Marshal.SizeOf<ShaderConfig>();
+            GL.BufferData(BufferTarget.UniformBuffer, configSizeInBytes, IntPtr.Zero, BufferUsageHint.StaticDraw);
+            GL.BindBufferBase(BufferRangeTarget.UniformBuffer, 0, uboConfig);
+
+            //constant-length buffers
+            CreateBuffer(ref trackingBuffer, 1, Marshal.SizeOf<Particle>());
+
+            GL.GetInteger((OpenTK.Graphics.OpenGL.GetIndexedPName)All.MaxComputeWorkGroupCount, 0, out maxGroupsX);
+            shaderPointStrideSize = Marshal.SizeOf<Particle>();
+            solvingProgram = ShaderUtil.CompileAndLinkComputeShader("solver.comp");
+            tilingCountProgram = ShaderUtil.CompileAndLinkComputeShader("tiling_count.comp");
+            tilingBinProgram = ShaderUtil.CompileAndLinkComputeShader("tiling_bin.comp");
+        }
+
+        public void Run(Simulation sim)
+        {
+            PrepareBuffers(sim.config.particleCount, sim.config.totalCellCount, sim.edges.Length, sim.forces.Length);
+            int dispatchGroupsX = (currentParticlesCount + ShaderUtil.LocalSizeX - 1) / ShaderUtil.LocalSizeX;
+            if (dispatchGroupsX > maxGroupsX)
+                dispatchGroupsX = maxGroupsX;           
+
+            sim.config.cellCount = (int)Math.Floor(sim.config.fieldSize / sim.config.maxDist);
+            sim.config.cellSize = sim.config.fieldSize / sim.config.cellCount;
+            sim.config.totalCellCount = sim.config.cellCount * sim.config.cellCount * sim.config.cellCount;
+            PrepareBuffers(sim.config.particleCount, sim.config.totalCellCount, sim.edges.Length, sim.forces.Length);
+
+            //upload config
+            GL.BindBuffer(BufferTarget.UniformBuffer, uboConfig);
+            GL.BufferData(BufferTarget.UniformBuffer, Marshal.SizeOf<ShaderConfig>(), ref sim.config, BufferUsageHint.StaticDraw);
+
+            // ------------------------ run tiling ---------------------------
+            //count
+            GL.BindBuffer(BufferTarget.ShaderStorageBuffer, cellCountBuffer);
+            GL.ClearBufferData(BufferTarget.ShaderStorageBuffer, PixelInternalFormat.R32ui, PixelFormat.RedInteger, PixelType.UnsignedInt, IntPtr.Zero);
+            GL.BindBufferBase(BufferRangeTarget.UniformBuffer, 0, uboConfig);
+            GL.BindBufferBase(BufferRangeTarget.ShaderStorageBuffer, 1, pointsBufferA);
+            GL.BindBufferBase(BufferRangeTarget.ShaderStorageBuffer, 6, cellCountBuffer);
+            GL.UseProgram(tilingCountProgram);
+            GL.DispatchCompute(dispatchGroupsX, 1, 1);
+            GL.MemoryBarrier(MemoryBarrierFlags.ShaderStorageBarrierBit | MemoryBarrierFlags.ShaderImageAccessBarrierBit);
+
+            //offset
+            DownloadIntBuffer(cellCounts, cellCountBuffer, currentTotalCellsCount);
+            int sum = 0;
+            for(int c=0; c<currentTotalCellsCount; c++)
+            {
+                cellOffsets[c] = sum;
+                sum += cellCounts[c];
+            }
+
+            //fill
+            UploadIntBuffer(cellOffsets, cellOffsetBuffer, currentTotalCellsCount);
+            GL.CopyNamedBufferSubData(cellOffsetBuffer, cellOffsetBuffer2, IntPtr.Zero, IntPtr.Zero, currentTotalCellsCount * sizeof(uint));
+            GL.BindBufferBase(BufferRangeTarget.UniformBuffer, 0, uboConfig);
+            GL.BindBufferBase(BufferRangeTarget.ShaderStorageBuffer, 1, pointsBufferA);
+            GL.BindBufferBase(BufferRangeTarget.ShaderStorageBuffer, 7, cellOffsetBuffer);
+            GL.BindBufferBase(BufferRangeTarget.ShaderStorageBuffer, 8, particleIndicesBuffer);
+
+            GL.UseProgram(tilingBinProgram);
+            GL.DispatchCompute(dispatchGroupsX, 1, 1);
+            GL.MemoryBarrier(MemoryBarrierFlags.ShaderStorageBarrierBit | MemoryBarrierFlags.ShaderImageAccessBarrierBit);
+            
+            // ------------------------- reactions --------------------------
+            stepCount++;
+            if (sim.reactionsFrequency > 0 && stepCount % sim.reactionsFrequency == 0)
+            {
+                Reaction(sim);
+                sim.config.trackedMoleculeIdx = sim.config.trackedIdx == -1 ? -1 : molecules[sim.config.trackedIdx];
+                GL.BindBuffer(BufferTarget.UniformBuffer, uboConfig);
+                GL.BufferData(BufferTarget.UniformBuffer, Marshal.SizeOf<ShaderConfig>(), ref sim.config, BufferUsageHint.StaticDraw);
+            }
+
+            // ------------------------ run solver --------------------------
+            GL.BindBufferBase(BufferRangeTarget.UniformBuffer, 0, uboConfig);
+            GL.BindBufferBase(BufferRangeTarget.ShaderStorageBuffer, 1, pointsBufferA);
+            GL.BindBufferBase(BufferRangeTarget.ShaderStorageBuffer, 2, pointsBufferB);
+            GL.BindBufferBase(BufferRangeTarget.ShaderStorageBuffer, 3, edgesBuffer);
+            GL.BindBufferBase(BufferRangeTarget.ShaderStorageBuffer, 4, forcesBuffer);
+            GL.BindBufferBase(BufferRangeTarget.ShaderStorageBuffer, 5, trackingBuffer);
+            GL.BindBufferBase(BufferRangeTarget.ShaderStorageBuffer, 6, cellCountBuffer);
+            GL.BindBufferBase(BufferRangeTarget.ShaderStorageBuffer, 7, cellOffsetBuffer2);
+            GL.BindBufferBase(BufferRangeTarget.ShaderStorageBuffer, 8, particleIndicesBuffer);
+            GL.BindBufferBase(BufferRangeTarget.ShaderStorageBuffer, 9, moleculesBuffer);
+            GL.BindBufferBase(BufferRangeTarget.ShaderStorageBuffer, 10, neighboursBuffer);
+            GL.BindBufferBase(BufferRangeTarget.ShaderStorageBuffer, 11, neighboursStartBuffer);
+            GL.BindBufferBase(BufferRangeTarget.ShaderStorageBuffer, 12, neighboursCountBuffer);
+            GL.BindBufferBase(BufferRangeTarget.ShaderStorageBuffer, 13, restLengthsBuffer);
+
+            GL.UseProgram(solvingProgram);
+            GL.DispatchCompute(dispatchGroupsX, 1, 1);
+            GL.MemoryBarrier(MemoryBarrierFlags.ShaderStorageBarrierBit | MemoryBarrierFlags.ShaderImageAccessBarrierBit);
+
+            (pointsBufferA, pointsBufferB) = (pointsBufferB, pointsBufferA);
+            
+        }
+
+        private void Reaction(Simulation sim)
+        {
+            DownloadIntBuffer(particleIndices, particleIndicesBuffer, currentParticlesCount);
+            DownloadParticles(sim.particles);
+            stopwatch.Restart();
+            sim.chemistry.React(cellOffsets, cellCounts, particleIndices, 
+                                neighboursStart, neighboursCount, neighbours, edgeIndices,
+                                molecules, moleculesStart, moleculesCount, moleculeParticleIndices, moleculesCnt);
+            stopwatch.Stop();
+            LastReactionTimeMs = stopwatch.Elapsed.TotalMilliseconds;
+            UploadEdges(sim.edges);
+        }
+
+        public void UploadParticles(Particle[] particles)
+        {
+            PrepareBuffers(particles.Length, currentTotalCellsCount, currentEdgesCount, currentForcesCount);
+            GL.BindBuffer(BufferTarget.ShaderStorageBuffer, pointsBufferA);
+            GL.BufferSubData(BufferTarget.ShaderStorageBuffer, 0, particles.Length * shaderPointStrideSize, particles);
+            GL.BindBuffer(BufferTarget.ShaderStorageBuffer, pointsBufferB);
+            GL.BufferSubData(BufferTarget.ShaderStorageBuffer, 0, particles.Length * shaderPointStrideSize, particles);
+        }
+        
+        public void UploadEdges(Edge[] edges)
+        {
+            PrepareBuffers(currentParticlesCount, currentTotalCellsCount, edges.Length, currentForcesCount);
+            GL.BindBuffer(BufferTarget.ShaderStorageBuffer, edgesBuffer);
+            GL.BufferSubData(BufferTarget.ShaderStorageBuffer, 0, edges.Length * Marshal.SizeOf<Edge>(), edges);
+            
+            ComputeNeighboursandMolecules(currentParticlesCount, edges);
+            GL.BindBuffer(BufferTarget.ShaderStorageBuffer, neighboursBuffer);
+            GL.BufferSubData(BufferTarget.ShaderStorageBuffer, 0, neighbours.Length * Marshal.SizeOf<uint>(), neighbours);
+            GL.BindBuffer(BufferTarget.ShaderStorageBuffer, neighboursStartBuffer);
+            GL.BufferSubData(BufferTarget.ShaderStorageBuffer, 0, neighboursStart.Length * Marshal.SizeOf<uint>(), neighboursStart);
+            GL.BindBuffer(BufferTarget.ShaderStorageBuffer, neighboursCountBuffer);
+            GL.BufferSubData(BufferTarget.ShaderStorageBuffer, 0, neighboursCount.Length * Marshal.SizeOf<uint>(), neighboursCount);
+            GL.BindBuffer(BufferTarget.ShaderStorageBuffer, restLengthsBuffer);
+            GL.BufferSubData(BufferTarget.ShaderStorageBuffer, 0, restLengths.Length * Marshal.SizeOf<float>(), restLengths);
+            GL.BindBuffer(BufferTarget.ShaderStorageBuffer, moleculesBuffer);
+            GL.BufferSubData(BufferTarget.ShaderStorageBuffer, 0, molecules.Length * Marshal.SizeOf<int>(), molecules);
+        }
+
+        public void UploadForces(Vector4[] forces)
+        {
+            PrepareBuffers(currentParticlesCount, currentTotalCellsCount, currentEdgesCount, forces.Length);
+            GL.BindBuffer(BufferTarget.ShaderStorageBuffer, forcesBuffer);
+            GL.BufferSubData(BufferTarget.ShaderStorageBuffer, 0, forces.Length * Marshal.SizeOf<Vector4>(), forces);
+        }
+
+        public void DownloadParticles(Particle[] particles, bool bufferB = false)
+        {
+            GL.BindBuffer(BufferTarget.ShaderStorageBuffer, bufferB ? pointsBufferB : pointsBufferA);
+
+            GL.GetBufferSubData(
+                BufferTarget.ShaderStorageBuffer,
+                IntPtr.Zero,
+                particles.Length * Marshal.SizeOf<Particle>(),
+                particles
+            );
+
+            GL.BindBuffer(BufferTarget.ShaderStorageBuffer, 0);
+        }
+
+        public Particle GetTrackedParticle()
+        {
+            GL.BindBuffer(BufferTarget.ShaderStorageBuffer, trackingBuffer);
+
+            GL.GetBufferSubData(
+                BufferTarget.ShaderStorageBuffer,
+                IntPtr.Zero,
+                Marshal.SizeOf<Particle>(),
+                ref trackedParticle
+            );
+
+            GL.BindBuffer(BufferTarget.ShaderStorageBuffer, 0);
+            return trackedParticle;
+        }
+
+        public void DownloadIntBuffer(int[] buffer, int bufferId, int size)
+        {
+            GL.BindBuffer(BufferTarget.ShaderStorageBuffer, bufferId);
+
+            GL.GetBufferSubData(
+                BufferTarget.ShaderStorageBuffer,
+                IntPtr.Zero,
+                size * Marshal.SizeOf<int>(),
+                buffer
+            );
+
+            GL.BindBuffer(BufferTarget.ShaderStorageBuffer, 0);
+        }
+
+        public void UploadIntBuffer(int[] buffer, int bufferId, int size)
+        {
+            GL.BindBuffer(BufferTarget.ShaderStorageBuffer, bufferId);
+            GL.BufferSubData(BufferTarget.ShaderStorageBuffer, 0, size * Marshal.SizeOf<int>(), buffer);
+        }
+
+        private void PrepareBuffers(int particlesCount, int totalCellsCount, int edgesCount, int forcesCount)
+        {
+            if (currentParticlesCount != particlesCount)
+            {
+                currentParticlesCount = particlesCount;
+                CreateBuffer(ref pointsBufferA, currentParticlesCount, shaderPointStrideSize);
+                CreateBuffer(ref pointsBufferB, currentParticlesCount, shaderPointStrideSize);
+                CreateBuffer(ref particleIndicesBuffer, currentParticlesCount, Marshal.SizeOf<int>());
+                CreateBuffer(ref neighboursStartBuffer, currentParticlesCount, Marshal.SizeOf<int>());
+                CreateBuffer(ref neighboursCountBuffer, currentParticlesCount, Marshal.SizeOf<int>());
+                CreateBuffer(ref moleculesBuffer, currentParticlesCount, Marshal.SizeOf<int>());
+                neighboursStart = new uint[particlesCount];
+                neighboursCount = new uint[particlesCount];
+                particleIndices = new int[particlesCount];
+            }
+
+            if (currentTotalCellsCount != totalCellsCount)
+            {
+                currentTotalCellsCount = totalCellsCount;
+                CreateBuffer(ref cellCountBuffer, currentTotalCellsCount, Marshal.SizeOf<int>());
+                CreateBuffer(ref cellOffsetBuffer, currentTotalCellsCount, Marshal.SizeOf<int>());
+                CreateBuffer(ref cellOffsetBuffer2, currentTotalCellsCount, Marshal.SizeOf<int>());
+                cellCounts = new int[totalCellsCount];
+                cellOffsets = new int[totalCellsCount];
+            }
+
+            if (currentEdgesCount != edgesCount)
+            {
+                currentEdgesCount = edgesCount;
+                CreateBuffer(ref edgesBuffer, (int)edgesCount, Marshal.SizeOf<Edge>());
+                CreateBuffer(ref neighboursBuffer, (int)edgesCount * 2, Marshal.SizeOf<uint>());
+                CreateBuffer(ref restLengthsBuffer, (int)edgesCount * 2, Marshal.SizeOf<float>());
+                neighbours = new uint[edgesCount * 2];
+                edgeIndices = new int[edgesCount * 2];
+                restLengths = new float[edgesCount * 2];
+            }
+
+            if (currentForcesCount != forcesCount)
+            {
+                currentForcesCount = forcesCount;
+                CreateBuffer(ref forcesBuffer, currentForcesCount, Marshal.SizeOf<Vector4>());
+            }
+        }
+
+        private void CreateBuffer(ref int bufferId, int elementCount, int elementSize)
+        {
+            if (bufferId > 0)
+            {
+                GL.DeleteBuffer(bufferId);
+                bufferId = 0;
+            }
+            GL.GenBuffers(1, out bufferId);
+            GL.BindBuffer(BufferTarget.ShaderStorageBuffer, bufferId);
+            GL.BufferData(BufferTarget.ShaderStorageBuffer, elementCount * elementSize, IntPtr.Zero, BufferUsageHint.DynamicDraw);
+        }
+        
+        public void ComputeNeighboursandMolecules(int particlesCount, Edge[] edges)
+        {
+            //compute immediate connections
+            Array.Clear(neighboursCount);
+            for(int e=0; e<edges.Length; e++)
+            {
+                var edge = edges[e];
+                neighboursCount[edge.a]++;
+                neighboursCount[edge.b]++;
+            }
+
+            uint sum = 0;
+            for (int i = 0; i < particlesCount; i++)
+            {
+                neighboursStart[i] = sum;
+                sum += neighboursCount[i];
+            }
+
+            var cursor = neighboursStart.ToArray();
+            for (int i = 0; i < edges.Length; i++)
+            {
+                uint a = edges[i].a;
+                uint b = edges[i].b;
+                float restLen = edges[i].restLength;
+
+                neighbours[cursor[a]] = b;
+                restLengths[cursor[a]] = restLen;
+                edgeIndices[cursor[a]] = i;
+                cursor[a]++;
+
+                neighbours[cursor[b]] = a;
+                restLengths[cursor[b]] = restLen;
+                edgeIndices[cursor[b]] = i;
+                cursor[b]++;
+            }
+            
+            // compute molecules
+            if (stack.Length != particlesCount)
+            {
+                stack = new int[particlesCount];
+                molecules = new int[particlesCount];
+                moleculesStart = new int[particlesCount];
+                moleculesCount = new int[particlesCount];
+                moleculeParticleIndices = new int[particlesCount];
+            }
+
+            int moleculeId = 0;
+            int offset = 0;
+            Array.Fill(molecules, -1);
+            Array.Clear(moleculesCount);
+            for (int idx = 0; idx < particlesCount; idx++)
+            {
+                if (molecules[idx] == -1)
+                {
+                    int stackTop = 0;
+                    moleculesStart[moleculeId] = offset;
+                    moleculeParticleIndices[offset] = idx;
+                    offset++;
+                    stack[stackTop] = idx;
+                    molecules[idx] = moleculeId;
+                    moleculesCount[moleculeId] = 1;
+                    while (stackTop >= 0)
+                    {
+                        int p = stack[stackTop];
+                        stackTop--;
+
+                        uint neighStart = neighboursStart[p];
+                        uint neighCount = neighboursCount[p];
+                        for (uint i = 0; i < neighCount; i++)
+                        {
+                            uint neighIdx = neighStart + i;
+                            uint otherIdx = neighbours[neighIdx];
+                            if (molecules[otherIdx] == -1)
+                            {
+                                stackTop++;
+                                stack[stackTop] = (int)otherIdx;
+                                molecules[otherIdx] = moleculeId;
+                                moleculesCount[moleculeId]++;
+                                moleculeParticleIndices[offset] = (int)otherIdx;
+                                offset++;
+                            }
+                        }
+                        
+                    }
+
+                    moleculeId++;
+                }
+            }
+
+            moleculesCnt = moleculeId;
+
+            /*
+            var groupped = molecules.Select((mId, particleIdx) => new {mId, particleIdx}).GroupBy(x => x.mId).ToList().OrderByDescending(x => x.Count()).ToList();
+            foreach (var group in groupped)
+            {
+                var testMoleculeId = group.Key;
+                var testMoleculeSize1 = group.Count();
+                var testMoleculeParticles1 = group.Select(x => x.particleIdx).ToArray();
+                var testMoleculeSize2 = moleculesCount[testMoleculeId];
+                var testMoleculeParticles2 = moleculeParticleIndices.Skip(moleculesStart[testMoleculeId])
+                    .Take(testMoleculeSize2).ToArray();
+                if (testMoleculeSize1 != testMoleculeSize2 ||
+                    testMoleculeParticles1.Intersect(testMoleculeParticles2).Count() != testMoleculeParticles1.Length)
+                    throw new Exception("Something is wrong");
+            }
+            */
+        }
+    }
+}

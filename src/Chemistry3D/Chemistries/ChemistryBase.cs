@@ -1,0 +1,501 @@
+﻿using Chemistry3D.Models;
+using Chemistry3D.Utils;
+using OpenTK.Mathematics;
+
+namespace Chemistry3D.Chemistries;
+
+public abstract class ChemistryBase
+{
+    protected const int ThreadCount = 20;
+    
+    protected Simulation sim;
+    
+    protected uint[] neighboursStart;
+
+    protected uint[] neighboursCount;
+
+    protected uint[] neighbours;
+    
+    protected int[] edgeIndices;
+    
+    protected bool[] reacted;
+
+    protected int[] molecules;
+
+    protected int[] moleculesStart;
+
+    protected int[] moleculesCount;
+
+    protected int[] moleculeParticleIndices;
+
+    protected int moleculesCnt;
+    
+    private Edge[] addedEdges;
+
+    private int addedEdgesCount;
+    
+    private int[] cellOffsets;
+
+    private int[] cellCounts;
+
+    private int[] particleIndices;
+
+    private int[] stack;
+
+    private int currentCellCount = -1;
+
+    private List<int>[] partitions;
+    
+    private NearParticlesThreadContext[] nearThreads = new NearParticlesThreadContext[ThreadCount];
+    
+    private IterateMoleculesThreadContext[] moleculeThreads = new IterateMoleculesThreadContext[ThreadCount];
+    protected void InternalInitialize(double[] proportion, float[] sizes, int[] colors)
+    {
+        stack = new int[sim.particles.Length];
+        reacted = new bool[sim.particles.Length];
+        addedEdges = new Edge[sim.particles.Length];
+        for (int t = 0; t < nearThreads.Length; t++)
+            nearThreads[t] = new NearParticlesThreadContext();
+        for (int t = 0; t < moleculeThreads.Length; t++)
+            moleculeThreads[t] = new IterateMoleculesThreadContext();
+
+        molecules = new int[sim.particles.Length];
+        moleculesStart = new int[sim.particles.Length];
+        moleculesCount = new int[sim.particles.Length];
+        moleculeParticleIndices = new int[sim.particles.Length];
+        
+        var propTotal = proportion.Sum();
+        proportion = proportion.Select(x => x / propTotal).ToArray();
+        var propSums = new double[proportion.Length];
+        propSums[0] = proportion[0];
+        for (int p = 1; p < proportion.Length; p++)
+            propSums[p] = propSums[p - 1] + proportion[p];
+
+        sim.config.typesCount = proportion.Length;
+        for(int i=0; i< sim.config.particleCount; i++)
+        {
+            sim.particles[i].position = new Vector4(sim.config.fieldSize * sim.rnd.NextSingle(), sim.config.fieldSize * sim.rnd.NextSingle(), sim.config.fieldSize * sim.rnd.NextSingle(), 0);
+
+            var typeRand = sim.rnd.NextDouble();
+            for(int p=0; p<propSums.Length;p++)
+                if (typeRand < propSums[p])
+                {
+                    sim.particles[i].type = p;
+                    break;
+                }
+
+
+            sim.particles[i].size = sizes[sim.particles[i].type];
+            sim.particles[i].color = colors[sim.particles[i].type];
+
+            var dir = new Vector4(sim.rnd.NextSingle() * 2 - 1, sim.rnd.NextSingle() * 2 - 1, sim.rnd.NextSingle() * 2 - 1, 0);
+            dir.Normalize();
+            sim.particles[i].direction = dir;
+            sim.particles[i].velocity = dir * (10f + sim.rnd.NextSingle() * 20);
+        }
+    }
+
+    public virtual void React(int[] cellOffsets, int[] cellCounts, int[] particleIndices, 
+                              uint[] neighboursStart, uint[] neighboursCount, uint[] neighbours, int[] edgeIndices,
+                              int[] molecules, int[] moleculesStart, int[] moleculesCount, int[] moleculeParticleIndices, int moleculesCnt)
+    {
+        this.cellOffsets = cellOffsets;
+        this.cellCounts = cellCounts;
+        this.particleIndices = particleIndices;
+        this.neighboursStart = neighboursStart;
+        this.neighboursCount = neighboursCount;
+        this.neighbours = neighbours;
+        this.edgeIndices = edgeIndices;
+        this.molecules = molecules;
+        this.moleculesStart = moleculesStart;
+        this.moleculesCount = moleculesCount;
+        this.moleculeParticleIndices = moleculeParticleIndices;
+        this.moleculesCnt = moleculesCnt;
+        Array.Clear(reacted, 0, reacted.Length);
+        InternalReact();
+    }
+
+    protected abstract void InternalReact();
+
+    protected void IterateMolecules(Action<int, Random, List<Edge>, List<Edge>> processMolecule)
+    {
+        foreach (var thread in moleculeThreads)
+        {
+            thread.AddedEdges.Clear();
+            thread.RemovedEdges.Clear();
+        }
+
+        ParallelHelper.ParallelProcess(moleculeThreads, moleculesCnt, (thread, moleculeId) =>
+        {
+            if (thread.Rnd.NextSingle() > sim.reactionProbability)
+                return;
+            
+            var molCount = moleculesCount[moleculeId];
+            var molStart = moleculesStart[moleculeId];
+            for (uint i = 0; i < molCount; i++)
+            {
+                var mIdx = molStart + i;
+                var pIdx = moleculeParticleIndices[mIdx];
+                if (reacted[pIdx])
+                    return;
+            }
+
+            processMolecule(moleculeId, thread.Rnd, thread.AddedEdges, thread.RemovedEdges);
+        });
+
+        var totalAddedEdges = moleculeThreads.SelectMany(t => t.AddedEdges).ToArray();
+        var totalRemovedEdges = moleculeThreads.SelectMany(t => t.RemovedEdges).ToArray();
+
+        if (totalRemovedEdges.Length > 0)
+            RemoveEdges(totalRemovedEdges);
+        
+        AddEdges(totalAddedEdges, totalAddedEdges.Length);
+    }
+
+    private void RemoveEdges(Edge[] edgesToRemove)
+    {
+        int removedCount = 0;
+        for (var r = 0; r < edgesToRemove.Length; r++)
+        {
+            var edge = edgesToRemove[r];
+            uint neighCount = neighboursCount[edge.a];
+            uint neighStart = neighboursStart[edge.a];
+            for (uint i = 0; i < neighCount; i++)
+            {
+                uint neighIdx = neighStart + i;
+                uint otherIdx = neighbours[neighIdx];
+                if (otherIdx == edge.b)
+                {
+                    var edgeIdx = edgeIndices[neighIdx];
+                    var test = sim.edges[edgeIdx];
+                    if ((test.a == edge.a && test.b == edge.b) || (test.a == edge.b && test.b == edge.a))
+                    {
+                        sim.edges[edgeIdx].flags = -1;
+                        removedCount++;
+                        break;
+                    }
+                }
+            }
+        }
+
+        if (removedCount != edgesToRemove.Length)
+            throw new Exception("a");
+        
+        var newEdges = new Edge[sim.edges.Length - removedCount];
+        int idx = 0;
+        for(int i=0; i<sim.edges.Length; i++)
+            if (sim.edges[i].flags != -1)
+                newEdges[idx++] = sim.edges[i];
+        sim.edges = newEdges;
+    }
+    
+    protected void ConnectToNear(float maxDistance, Func<int, Random, bool> shouldCheck, ShouldConnectDelegate shouldConnect, bool parallel = true)
+    {
+        maxDistance = maxDistance * sim.reactionDistance;
+        if (parallel)
+        {
+            CreatePartitions();
+            var totalAddedEdges = new List<Edge>();
+            var locking = new object();
+            foreach (var partition in partitions)
+            {
+                foreach(var thread in nearThreads)
+                    thread.AddedEdges.Clear();
+                
+                ParallelHelper.ParallelProcess(nearThreads, partition, (thread, cellIndex) =>
+                {
+                    ConnectToNearOneCell(maxDistance, cellIndex, shouldCheck, shouldConnect, thread.Rnd, thread.AddedEdges);
+                });
+                
+                totalAddedEdges.AddRange(nearThreads.SelectMany(t=>t.AddedEdges));
+            }
+            
+            if (totalAddedEdges.Count > 0)
+                AddEdges(totalAddedEdges.ToArray(), totalAddedEdges.Count);
+        }
+        else
+        {
+            addedEdgesCount = 0;
+            for (int cellIndex = 0; cellIndex < sim.config.totalCellCount; cellIndex++)
+                ConnectToNearOneCell(maxDistance, cellIndex, shouldCheck, shouldConnect, sim.rnd);
+
+            if (addedEdgesCount > 0)
+                AddEdges(addedEdges, addedEdgesCount);
+        }
+    }
+    
+    protected bool AreImmediatelyConnected(int idx, int idx2)
+    {
+        uint neighCount = neighboursCount[idx];
+        if (neighCount == 0)
+            return false;
+        
+        uint neighStart = neighboursStart[idx];
+        for (uint i = 0; i < neighCount; i++)
+        {
+            uint neighIdx = neighStart + i;
+            uint otherIdx = neighbours[neighIdx];
+            if (otherIdx == idx2)
+                return true;
+        }
+
+        return false;
+    }
+    
+    protected int CountImmediateConnections(int idx, int type)
+    {
+        uint neighCount = neighboursCount[idx];
+        if (neighCount == 0)
+            return 0;
+        
+        int count = 0;
+        uint neighStart = neighboursStart[idx];
+        for (uint i = 0; i < neighCount; i++)
+        {
+            uint neighIdx = neighStart + i;
+            uint otherIdx = neighbours[neighIdx];
+            if (sim.particles[otherIdx].type == type)
+                count++;
+        }
+
+        return count;
+    }
+    
+    protected void IterateImmediateConnections(int idx, Action<int> action)
+    {
+        uint neighCount = neighboursCount[idx];
+        if (neighCount == 0)
+            return;
+        
+        uint neighStart = neighboursStart[idx];
+        for (uint i = 0; i < neighCount; i++)
+        {
+            uint neighIdx = neighStart + i;
+            uint otherIdx = neighbours[neighIdx];
+            action((int)otherIdx);
+        }
+    }
+    
+    protected void IterateMolecule(int moleculeId, Action<int> action)
+    {
+        var molCount = moleculesCount[moleculeId];
+        var molStart = moleculesStart[moleculeId];
+        for (uint i = 0; i < molCount; i++)
+        {
+            var mIdx = molStart + i;
+            var pIdx = moleculeParticleIndices[mIdx];
+            action(pIdx);
+        }
+    }
+    
+    protected int CountInMolecule(int moleculeId, int type)
+    {
+        var count = 0;
+        var molCount = moleculesCount[moleculeId];
+        var molStart = moleculesStart[moleculeId];
+        for (uint i = 0; i < molCount; i++)
+        {
+            var mIdx = molStart + i;
+            var pIdx = moleculeParticleIndices[mIdx];
+            if (sim.particles[pIdx].type == type)
+                count++;
+        }
+
+        return count;
+    }
+
+    private void CreatePartitions()
+    {
+        if (currentCellCount != sim.config.cellCount)
+        {
+            currentCellCount = sim.config.cellCount;
+            partitions = new List<int>[27];
+            for (int i = 0; i < 27; i++)
+                partitions[i] = new List<int>();
+            int cellCount2 = sim.config.cellCount * sim.config.cellCount;
+            for (int cellIndex = 0; cellIndex < sim.config.totalCellCount; cellIndex++)
+            {
+                int gridX = cellIndex % sim.config.cellCount;
+                int gridY = (cellIndex / sim.config.cellCount) % sim.config.cellCount;
+                int gridZ = cellIndex / (cellCount2);
+                int partitionIdx = (gridX % 3) * 9 + (gridY % 3) * 3 + (gridZ % 3);
+                partitions[partitionIdx].Add(cellIndex);
+            }
+        }
+    }
+
+    private void AddEdges(Edge[] addedEdgesArg, int addedEdgesCountArg)
+    {
+        var newEdges = new Edge[sim.edges.Length + addedEdgesCountArg];
+        Array.Copy(sim.edges, newEdges, sim.edges.Length);
+        Array.Copy(addedEdgesArg, 0, newEdges, sim.edges.Length, addedEdgesCountArg);
+        sim.edges = newEdges;
+    }
+
+    private void ConnectToNearOneCell(float maxDistance, 
+                                      int cellIndex, Func<int, Random, bool> shouldCheck, 
+                                      ShouldConnectDelegate shouldConnect, Random rnd, 
+                                      List<Edge> producedEdges = null)
+    {
+        if (rnd.NextSingle() > sim.reactionProbability)
+            return;
+        
+        float maxDistanceSquared = maxDistance * maxDistance;
+        int mainOffset = cellOffsets[cellIndex];
+        int mainCount = cellCounts[cellIndex];
+        
+        int cellCount2 = sim.config.cellCount * sim.config.cellCount;
+        int gridX = cellIndex % sim.config.cellCount;
+        int gridY = (cellIndex / sim.config.cellCount) % sim.config.cellCount;
+        int gridZ = cellIndex / (cellCount2);
+        var main = new Vector3i(gridX, gridY, gridZ);
+
+        NearParticleComparer comparer = new NearParticleComparer();
+        var maxNearParticlesCount = CountParticlesInAdjacentCells(main);
+        NearParticle[] near = new NearParticle[maxNearParticlesCount];
+       
+
+        for (int mainIndiceIdx = mainOffset; mainIndiceIdx < mainOffset + mainCount; mainIndiceIdx++)
+        {
+            int idx = particleIndices[mainIndiceIdx];
+            if (reacted[idx] || !shouldCheck(idx, rnd))
+                continue;
+
+            // prepare array of near particles
+            int nearCount = 0;
+            for (int dz = -1; dz <= 1; dz++)
+            for (int dy = -1; dy <= 1; dy++)
+            for (int dx = -1; dx <= 1; dx++)
+            {
+                Vector3i otherCell = main + new Vector3i(dx, dy, dz);
+                if (otherCell.X < 0 || otherCell.X >= sim.config.cellCount ||
+                    otherCell.Y < 0 || otherCell.Y >= sim.config.cellCount ||
+                    otherCell.Z < 0 || otherCell.Z >= sim.config.cellCount)
+                    continue;
+
+                int otherCellIdx = otherCell.X +
+                                   otherCell.Y * sim.config.cellCount +
+                                   otherCell.Z * cellCount2;
+                int otherOffset = cellOffsets[otherCellIdx];
+                int otherCount = cellCounts[otherCellIdx];
+                for (int otherIndiceIdx = otherOffset; otherIndiceIdx < otherOffset + otherCount; otherIndiceIdx++)
+                {
+                    int otherIdx = particleIndices[otherIndiceIdx];
+                    float distanceSquared = (sim.particles[idx].position - sim.particles[otherIdx].position).LengthSquared;
+                    if (idx != otherIdx && !reacted[otherIdx] && distanceSquared < maxDistanceSquared && !AreImmediatelyConnected(idx, otherIdx))
+                    {
+                        near[nearCount].particleIndex = otherIdx;
+                        near[nearCount].distanceSquared = distanceSquared;
+                        nearCount++;
+                    }
+                }
+            }
+            
+            //iterate list of ordered near particles
+            Array.Sort(near, 0, nearCount, comparer);
+            for (int k = 0; k < nearCount; k++)
+            {
+                int otherIdx = near[k].particleIndex;
+                if (shouldConnect(idx, otherIdx, near[k].distanceSquared, rnd, out var length))
+                {
+                    if (producedEdges == null)
+                    {
+                        addedEdges[addedEdgesCount].a = (uint)idx;
+                        addedEdges[addedEdgesCount].b = (uint)otherIdx;
+                        addedEdges[addedEdgesCount].restLength = length;
+                        addedEdgesCount++;
+                    }
+                    else
+                    {
+                        producedEdges.Add(new Edge(){ a=(uint)idx, b=(uint)otherIdx, restLength = length});
+                                
+                    }
+
+                    MarkReacted(idx);
+                    MarkReacted(otherIdx);
+                    break;
+                }
+            }
+            
+            
+            
+        }
+    }
+
+    private void MarkReacted(int particleIdx)
+    {
+        reacted[particleIdx] = true;
+        int moleculeIdx = molecules[particleIdx];
+        int molStart = moleculesStart[moleculeIdx];
+        int molCount = moleculesCount[moleculeIdx];
+        for (int i = 0; i < molCount; i++)
+        {
+            int idx = molStart + i;
+            var otherIdx = moleculeParticleIndices[idx];
+            reacted[otherIdx] = true;
+        }
+    }
+
+    private int CountParticlesInAdjacentCells(Vector3i main)
+    {
+        int count = 0;
+        int cellCount2 = sim.config.cellCount * sim.config.cellCount;
+        for (int dz = -1; dz <= 1; dz++)
+        for (int dy = -1; dy <= 1; dy++)
+        for (int dx = -1; dx <= 1; dx++)
+        {
+            Vector3i otherCell = main + new Vector3i(dx, dy, dz);
+            if (otherCell.X < 0 || otherCell.X >= sim.config.cellCount ||
+                otherCell.Y < 0 || otherCell.Y >= sim.config.cellCount ||
+                otherCell.Z < 0 || otherCell.Z >= sim.config.cellCount)
+                continue;
+            
+            int otherCellIdx = otherCell.X +
+                               otherCell.Y * sim.config.cellCount +
+                               otherCell.Z * cellCount2;
+            count += cellCounts[otherCellIdx];
+        }
+        
+        return count;
+    }
+}
+
+public delegate bool ShouldConnectDelegate(int idx, int otherIdx, float distanceSquared, Random rnd, out float length);
+
+public struct NearParticle
+{
+    public int particleIndex;
+
+    public float distanceSquared;
+}
+
+public class NearParticleComparer : IComparer<NearParticle>
+{
+    public int Compare(NearParticle x, NearParticle y)
+    {
+        return x.distanceSquared < y.distanceSquared ? -1 :
+            x.distanceSquared > y.distanceSquared ? 1 : 0;
+    }
+}
+
+public class NearParticlesThreadContext : IThreadContext
+{
+    public int StartIndex { get; set; }
+    public int EndIndex { get; set; }
+
+    public Random Rnd { get; set; } = new Random();
+
+    public List<Edge> AddedEdges { get; set; } = new List<Edge>();
+}
+
+public class IterateMoleculesThreadContext : IThreadContext
+{
+    public int StartIndex { get; set; }
+    public int EndIndex { get; set; }
+
+    public Random Rnd { get; set; } = new Random();
+
+    public List<Edge> AddedEdges { get; set; } = new List<Edge>();
+    
+    public List<Edge> RemovedEdges { get; set; } = new List<Edge>();
+}
